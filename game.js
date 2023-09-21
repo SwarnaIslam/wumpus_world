@@ -84,6 +84,43 @@ function recordPosition(positionX, positionY) {
     }
 }
 
+function checkEmptyCell(positionX, positionY) {
+
+    const directions = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    for (const { dx, dy } of directions) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
+            const isVisited = recordedPositions[newY].some(cell => cell.x === newX && cell.y === newY);
+            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+            if (isVisited && cell && !cell.textContent) {
+                // console.log('Found an Empty Cell at: ', newX, newY, ' for cell: ', positionX, positionY);
+                const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
+
+                // console.log(cellIndex, dx, dy);
+
+                possibleMoves[cellIndex].danger = 0;
+            }
+        }
+    }
+}
+
+function checkEmptyNeighbourCell() {
+    // console.log('all Possible moves: ', possibleMoves);
+    for (const move of possibleMoves) {
+        // console.log("going with move: ", move);
+        checkEmptyCell(move.x, move.y);
+    }
+}
+
 function getPossibleMoves(playerX, playerY) {
     const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${playerX}"][data-y="${playerY}"]`);
 
@@ -103,7 +140,7 @@ function getPossibleMoves(playerX, playerY) {
         // Check if the new position is within the grid boundaries
         if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
             const cellIndex = possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY);
-            const isVisited = recordedPositions[playerY].some(cell => cell.x === playerX && cell.y === playerY)
+            const isVisited = recordedPositions[playerY].some(cell => cell.x === playerX && cell.y === playerY);
 
             if (!isVisited) {
                 if (cell.textContent.includes('Stench')) {
@@ -132,7 +169,11 @@ function getPossibleMoves(playerX, playerY) {
 
     recordPosition(playerPosition.x, playerPosition.y);
 
+    // console.log('Recorded move: ', recordedPositions);
+
     possibleMoves = possibleMoves.filter(cell => !recordedPositions.some(subarray => subarray.some(recordedCell => recordedCell.x === cell.x && recordedCell.y === cell.y)));
+
+    checkEmptyNeighbourCell();
 }
 
 // Define data structures
@@ -201,14 +242,14 @@ function findPath(startX, startY, targetX, targetY) {
 
             // Skip if neighbor is out of bounds or in closed list
             if (
-                nx < 0 || nx >=  10 ||
+                nx < 0 || nx >= 10 ||
                 ny < 0 || ny >= 10 ||
-                closedList.has(`${nx}-${ny}`) 
+                closedList.has(`${nx}-${ny}`)
             ) {
                 continue;
             }
 
-            if(!recordedPositions[ny].some(cell => cell.x === nx && cell.y === ny) && !(nx === targetX && ny === targetY)) {
+            if (!recordedPositions[ny].some(cell => cell.x === nx && cell.y === ny) && !(nx === targetX && ny === targetY)) {
                 continue;
             }
 
@@ -276,11 +317,34 @@ function movePlayer(direction) {
     updatePlayerPosition();
     updateScore();
 
-    const nextMove = selectBestPath(playerPosition.x, playerPosition.y);
-    console.log('Next move: ', nextMove);
+    const nextBestMove = selectBestPath(playerPosition.x, playerPosition.y);
+    // console.log('Next move: ', nextBestMove);
 
-    const path = findPath(playerPosition.x, playerPosition.y, nextMove.x, nextMove.y);
-    console.log('Path to next Move: ', path);
+    const path = findPath(playerPosition.x, playerPosition.y, nextBestMove.x, nextBestMove.y);
+    // console.log('Path to next Move: ', path);
+
+    const nextMove = path[1];
+
+    const nextMoveDirection = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    for (const { dx, dy, move } of nextMoveDirection) {
+        const newX = playerPosition.x + dx;
+        const newY = playerPosition.y + dy;
+
+        if (newX === nextMove.x && newY === nextMove.y) {
+            // console.log(move);
+            setTimeout(() => {
+                // console.log('moving');
+                movePlayer(move);
+            }, 0.5);
+            break;
+        }
+    }
 }
 
 function shootArrow() {
@@ -389,7 +453,7 @@ function initializeGame() {
     const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${wumpusPosition.x}"][data-y="${wumpusPosition.y}"]`);
     cell_elements.appendChild(wumpus);
 
-    const numberOfPits = 20;
+    const numberOfPits = 10;
     for (let i = 0; i < numberOfPits; i++) {
         const pitPosition = { id: `${i}` };
         placeRandomElementAvoidingAdjacent(document.createElement('div'), pitPosition, avoidPositions);
@@ -479,9 +543,13 @@ function selectBestPath(playerX, playerY) {
         return distanceA - distanceB;
     });
 
+    // console.log('All possible moves: ', possibleMoves);
+
     return possibleMoves[0];
 }
 
 initializeGame();
 
 updatePlayerPosition();
+
+movePlayer('right');
