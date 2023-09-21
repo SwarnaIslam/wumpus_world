@@ -19,14 +19,18 @@ let wumpusPosition = { x: 0, y: 0 };
 let score = 0;
 let arrows = 3;
 let pits = [];
-let bridges = [];
+let recordedPositions = Array.from({ length: 10 }, () => []);
+let possibleMoves = [];
 
 // Initialize the grid
 for (let i = 0; i < 100; i++) {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
-    cell.setAttribute('data-x', i % 10);
-    cell.setAttribute('data-y', Math.floor(i / 10));
+    const cell_elements = document.createElement('div');
+    cell_elements.className = 'grid-cell-elements';
+    cell_elements.setAttribute('data-x', i % 10);
+    cell_elements.setAttribute('data-y', Math.floor(i / 10));
+    cell.appendChild(cell_elements);
     gridContainer.appendChild(cell);
 }
 
@@ -63,8 +67,176 @@ function checkPitCollisions() {
     return false; // No collision with any pit
 }
 
+function recordPosition(positionX, positionY) {
+    const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${positionX}"][data-y="${positionY}"]`);
+    const cellExists = recordedPositions[positionY].some(cell => cell.x === positionX && cell.y === positionY);
+
+    if (!cellExists) {
+        if (cell.textContent.includes('Stench')) {
+            recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'Stench' });
+        }
+        else if (cell.textContent.includes('Breeze')) {
+            recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'Breeze' });
+        }
+        else {
+            recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'Empty' });
+        }
+    }
+}
+
+function getPossibleMoves(playerX, playerY) {
+    const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${playerX}"][data-y="${playerY}"]`);
+
+    // Define the possible directions (left, right, up, down)
+    const directions = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    // Check each direction for possible moves
+    for (const { dx, dy } of directions) {
+        const newX = playerX + dx;
+        const newY = playerY + dy;
+
+        // Check if the new position is within the grid boundaries
+        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
+            const cellIndex = possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY);
+            const isVisited = recordedPositions[playerY].some(cell => cell.x === playerX && cell.y === playerY)
+
+            if (!isVisited) {
+                if (cell.textContent.includes('Stench')) {
+                    if (cellIndex !== -1) {
+                        possibleMoves[cellIndex].danger = possibleMoves[cellIndex].danger + 1;
+                    }
+                    else {
+                        possibleMoves.push({ x: newX, y: newY, danger: 1 });
+                    }
+                }
+                else if (cell.textContent.includes('Breeze')) {
+                    if (cellIndex !== -1) {
+
+                        possibleMoves[cellIndex].danger = possibleMoves[cellIndex].danger + 1;
+                    }
+                    else {
+                        possibleMoves.push({ x: newX, y: newY, danger: 1 });
+                    }
+                }
+                else if (cellIndex === -1) {
+                    possibleMoves.push({ x: newX, y: newY, danger: 0 });
+                }
+            }
+        }
+    }
+
+    recordPosition(playerPosition.x, playerPosition.y);
+
+    possibleMoves = possibleMoves.filter(cell => !recordedPositions.some(subarray => subarray.some(recordedCell => recordedCell.x === cell.x && recordedCell.y === cell.y)));
+}
+
+// Define data structures
+class Node {
+    constructor(x, y, g = 0, h = 0) {
+        this.x = x;
+        this.y = y;
+        this.g = g; // Cost from start to current node
+        this.h = h; // Heuristic (estimated cost to target)
+    }
+
+    get f() {
+        return this.g + this.h;
+    }
+}
+
+// Calculate Manhattan distance heuristic
+function calculateHeuristic(x1, y1, x2, y2) {
+    return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+}
+
+// A* pathfinding function
+function findPath(startX, startY, targetX, targetY) {
+    const openList = []; // Priority queue of open nodes
+    const closedList = new Set(); // Set of closed nodes
+
+    const startNode = new Node(startX, startY);
+    const targetNode = new Node(targetX, targetY);
+
+    openList.push(startNode);
+
+    while (openList.length > 0) {
+        // Find the node with the lowest f score in the open list
+        const currentNode = openList.reduce((minNode, node) =>
+            node.f < minNode.f ? node : minNode, openList[0]);
+
+        // Remove the current node from the open list
+        openList.splice(openList.indexOf(currentNode), 1);
+
+        // Add the current node to the closed list
+        closedList.add(`${currentNode.x}-${currentNode.y}`);
+
+        // Check if we've reached the target
+        if (currentNode.x === targetNode.x && currentNode.y === targetNode.y) {
+            const path = [];
+            let current = currentNode;
+
+            while (current) {
+                path.unshift({ x: current.x, y: current.y });
+                current = current.parent;
+            }
+
+            return path;
+        }
+
+        // Generate neighbor nodes
+        const neighbors = [
+            { x: currentNode.x - 1, y: currentNode.y },
+            { x: currentNode.x + 1, y: currentNode.y },
+            { x: currentNode.x, y: currentNode.y - 1 },
+            { x: currentNode.x, y: currentNode.y + 1 },
+        ];
+
+        for (const neighbor of neighbors) {
+            const [nx, ny] = [neighbor.x, neighbor.y];
+
+            // Skip if neighbor is out of bounds or in closed list
+            if (
+                nx < 0 || nx >=  10 ||
+                ny < 0 || ny >= 10 ||
+                closedList.has(`${nx}-${ny}`) 
+            ) {
+                continue;
+            }
+
+            if(!recordedPositions[ny].some(cell => cell.x === nx && cell.y === ny) && !(nx === targetX && ny === targetY)) {
+                continue;
+            }
+
+            // Calculate tentative g score
+            const gScore = currentNode.g + 1; // Assuming uniform cost
+
+            // Check if neighbor is not in the open list or has a lower g score
+            let neighborNode = openList.find(node => node.x === nx && node.y === ny);
+
+            if (!neighborNode || gScore < neighborNode.g) {
+                if (!neighborNode) {
+                    neighborNode = new Node(nx, ny);
+                    openList.push(neighborNode);
+                }
+
+                neighborNode.parent = currentNode;
+                neighborNode.g = gScore;
+                neighborNode.h = calculateHeuristic(nx, ny, targetX, targetY);
+            }
+        }
+    }
+
+    // No path found
+    return [];
+}
+
+
 function movePlayer(direction) {
-    console.log('Player moved')
     if (messageDisplay.textContent !== '') {
         return; // Don't move if the game is over
     }
@@ -97,18 +269,18 @@ function movePlayer(direction) {
         alert(messageDisplay.textContent)
         return;
     } else if (checkPitCollisions()) {
-        if (cellContainsBridge(playerPosition.x, playerPosition.y)) {
-            // If the player has a bridge, remove it and continue
-            removePit(playerPosition.x, playerPosition.y);
-        } else {
-            messageDisplay.textContent = 'You fell into a pit! Game Over';
-            alert(messageDisplay.textContent);
-            return;
-        }
+        messageDisplay.textContent = 'You fell into a pit! Game Over';
+        alert(messageDisplay.textContent);
     }
 
     updatePlayerPosition();
     updateScore();
+
+    const nextMove = selectBestPath(playerPosition.x, playerPosition.y);
+    console.log('Next move: ', nextMove);
+
+    const path = findPath(playerPosition.x, playerPosition.y, nextMove.x, nextMove.y);
+    console.log('Path to next Move: ', path);
 }
 
 function shootArrow() {
@@ -170,26 +342,11 @@ function updatePlayerPosition() {
     player.style.left = playerPosition.x * 52 + 'px';
     player.style.top = playerPosition.y * 53.5 + 'px';
 
-    const currentCell = document.querySelector(`#grid-container > .grid-cell[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
+    const currentCell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
 
-    if (!currentCell.classList.contains('visited')) {
-        currentCell.style.backgroundColor = '#fff'; // Brown for unvisited cells
-        currentCell.classList.add('visited');
-    }
+    currentCell.style.display = 'block';
 
     player.style.transform = 'translate(+75%, +75%)'; // Center the player in the cell
-
-    for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-            const cellX = playerPosition.x + dx;
-            const cellY = playerPosition.y + dy;
-            const cell = document.querySelector(`#grid-container > .grid-cell[data-x="${cellX}"][data-y="${cellY}"]`);
-
-            if (checkCollision({ x: cellX, y: cellY }, wumpusPosition)) {
-                cell.textContent = "Stench";
-            }
-        }
-    }
 }
 
 function placeRandomElementAvoidingAdjacent(element, position, avoidPositions) {
@@ -208,6 +365,7 @@ function placeRandomElementAvoidingAdjacent(element, position, avoidPositions) {
 
 // Initialize the game
 function initializeGame() {
+    recordedPositions[0].push({ x: 0, y: 0, content: 'Empty' });
 
     const avoidPositions = [];
 
@@ -222,8 +380,14 @@ function initializeGame() {
     // Place the Wumpus
     placeRandomElementAvoidingAdjacent(wumpus, wumpusPosition, avoidPositions);
     avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y });
+    avoidPositions.push({ x: wumpusPosition.x + 1, y: wumpusPosition.y });
+    avoidPositions.push({ x: wumpusPosition.x - 1, y: wumpusPosition.y });
+    avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y + 1 });
+    avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y - 1 });
 
     wumpus.style.transform = 'translate(+75%, +75%)';
+    const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${wumpusPosition.x}"][data-y="${wumpusPosition.y}"]`);
+    cell_elements.appendChild(wumpus);
 
     const numberOfPits = 20;
     for (let i = 0; i < numberOfPits; i++) {
@@ -236,7 +400,9 @@ function initializeGame() {
         pit.style.left = pitPosition.x * 52 + 'px';
         pit.style.top = pitPosition.y * 53.5 + 'px';
         pit.style.transform = 'translate(+75%, +75%)';
-        gridContainer.appendChild(pit);
+        const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${pitPosition.x}"][data-y="${pitPosition.y}"]`);
+        cell_elements.appendChild(pit);
+
         pits.push(pitPosition);
     }
 
@@ -254,8 +420,9 @@ function initializeGame() {
 
         // Check if the cell is within the grid boundaries
         if (cellX >= 0 && cellX < 10 && cellY >= 0 && cellY < 10 && !pits.some(pit => pit.x === cellX && pit.y === cellY)) {
-            const cell = document.querySelector(`#grid-container > .grid-cell[data-x="${cellX}"][data-y="${cellY}"]`);
+            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`);
             cell.textContent = "Stench";
+            cell.classList.add("stench");
         }
     }
 
@@ -273,60 +440,48 @@ function initializeGame() {
             const cellX = pitPosition.x + dx;
             const cellY = pitPosition.y + dy;
 
+
             // Check if the cell is within the grid boundaries
             if (
                 cellX >= 0 && cellX < 10 &&
                 cellY >= 0 && cellY < 10 &&
-                !document.querySelector(`#grid-container > .grid-cell[data-x="${cellX}"][data-y="${cellY}"]`).textContent.includes("Stench") &&
-                !document.querySelector(`#grid-container > .grid-cell[data-x="${cellX}"][data-y="${cellY}"]`).textContent.includes("Bridge") &&
+                !document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`).textContent.includes("Stench") &&
+                !document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`).textContent.includes("Breeze") &&
                 !pits.some(pit => pit.x === cellX && pit.y === cellY) &&
                 !(cellX === wumpusPosition.x && cellY === wumpusPosition.y)
             ) {
-                const cell = document.querySelector(`#grid-container > .grid-cell[data-x="${cellX}"][data-y="${cellY}"]`);
-                cell.textContent = "Bridge";
+                const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`);
+                cell.textContent = "Breeze";
+                cell.classList.add("breeze");
             }
         }
     }
 }
 
+function calculateDistance(x1, y1, x2, y2) {
+    // Calculate the Euclidean distance between two points (x1, y1) and (x2, y2)
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+function selectBestPath(playerX, playerY) {
+    getPossibleMoves(playerX, playerY);
+
+    possibleMoves.sort((a, b) => {
+        // Sort first by danger (ascending order)
+        const dangerComparison = a.danger - b.danger;
+        if (dangerComparison !== 0) {
+            return dangerComparison;
+        }
+
+        // If danger is equal, sort by distance (ascending order)
+        const distanceA = calculateDistance(playerX, playerY, a.x, a.y);
+        const distanceB = calculateDistance(playerX, playerY, b.x, b.y);
+        return distanceA - distanceB;
+    });
+
+    return possibleMoves[0];
+}
+
 initializeGame();
 
 updatePlayerPosition();
-
-function placeBridge(position) {
-    bridges.push({ x: position.x + 1, y: position.y });
-}
-
-function cellContainsBridge(x, y) {
-    return bridges.some(bridge => bridge.x === x && bridge.y === y);
-}
-
-function removePit(x, y) {
-    const index = pits.findIndex(pit => pit.x === x && pit.y === y);
-    if (index !== -1) {
-        const pitID = pits[index].id;
-        const pitElement = document.getElementById(pitID);
-        pits.splice(index, 1);
-
-        if (pitElement) {
-            pitElement.remove();
-        }
-    }
-}
-
-placeBridgeButton.addEventListener('click', () => {
-    if (arrows > 0) {
-        const adjacentPit = pits.some(pit => (
-            (pit.x === playerPosition.x && Math.abs(pit.y - playerPosition.y) === 1) ||
-            (pit.y === playerPosition.y && Math.abs(pit.x - playerPosition.x) === 1)
-        ));
-
-        if (adjacentPit) {
-            placeBridge(playerPosition);
-        } else {
-            alert('You can only place a bridge next to a pit.');
-        }
-    } else {
-        alert('Out of arrows!');
-    }
-});
