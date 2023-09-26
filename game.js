@@ -4,11 +4,6 @@ const pit1 = document.getElementById('pit1');
 const pit2 = document.getElementById('pit2');
 const pit3 = document.getElementById('pit3');
 const gridContainer = document.getElementById('grid-container');
-const leftButton = document.getElementById('left');
-const rightButton = document.getElementById('right');
-const upButton = document.getElementById('up');
-const downButton = document.getElementById('down');
-const shootButton = document.getElementById('shoot');
 const scoreDisplay = document.getElementById('score');
 const arrowsDisplay = document.getElementById('arrows');
 const messageDisplay = document.getElementById('message');
@@ -22,10 +17,13 @@ let pits = [];
 let recordedPositions = Array.from({ length: 10 }, () => []);
 let possibleMoves = [];
 
+
 // Initialize the grid
 for (let i = 0; i < 100; i++) {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
+    cell.style.marginTop="1px"
+    cell.style.marginLeft="1px"
     const cell_elements = document.createElement('div');
     cell_elements.className = 'grid-cell-elements';
     cell_elements.setAttribute('data-x', i % 10);
@@ -33,16 +31,11 @@ for (let i = 0; i < 100; i++) {
     cell.appendChild(cell_elements);
     gridContainer.appendChild(cell);
 }
+const currentCell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
+const cellWidth = window.getComputedStyle(currentCell.parentElement).width;
+const width=parseInt(cellWidth)
 
-// Place the player, wumpus, and pits randomly
-function placeRandomElement(element, position) {
-    const randomX = Math.floor(Math.random() * 10);
-    const randomY = Math.floor(Math.random() * 10);
-    position.x = randomX;
-    position.y = randomY;
-    element.style.left = randomX * 52 + 'px';
-    element.style.top = randomY * 53.5 + 'px';
-}
+const offset=width/2-20/2;
 
 function updateScore() {
     score++;
@@ -276,8 +269,7 @@ function findPath(startX, startY, targetX, targetY) {
     return [];
 }
 
-
-function movePlayer(direction) {
+async function movePlayer(direction) {
     if (messageDisplay.textContent !== '') {
         return; // Don't move if the game is over
     }
@@ -305,24 +297,21 @@ function movePlayer(direction) {
             break;
     }
 
+    await updatePlayerPosition(); // Wait for player position update
+
+    // Now, check for collisions and other game logic
     if (checkCollision(playerPosition, wumpusPosition)) {
         messageDisplay.textContent = 'You encountered the Wumpus! Game Over';
-        alert(messageDisplay.textContent)
-        return;
+        alert(messageDisplay.textContent);
     } else if (checkPitCollisions()) {
         messageDisplay.textContent = 'You fell into a pit! Game Over';
         alert(messageDisplay.textContent);
     }
 
-    updatePlayerPosition();
     updateScore();
 
     const nextBestMove = selectBestPath(playerPosition.x, playerPosition.y);
-    // console.log('Next move: ', nextBestMove);
-
     const path = findPath(playerPosition.x, playerPosition.y, nextBestMove.x, nextBestMove.y);
-    // console.log('Path to next Move: ', path);
-
     const nextMove = path[1];
 
     const nextMoveDirection = [
@@ -337,16 +326,39 @@ function movePlayer(direction) {
         const newY = playerPosition.y + dy;
 
         if (newX === nextMove.x && newY === nextMove.y) {
-            // console.log(move);
-            setTimeout(() => {
-                // console.log('moving');
-                movePlayer(move);
-            }, 0.5);
+            // Move to the next cell
+            movePlayer(move);
+            console.log(move);
             break;
         }
     }
 }
 
+async function updatePlayerPosition() {
+    return new Promise((resolve, reject) => {
+        const currentCell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
+
+        player.style.left = (playerPosition.x * 54) + offset + 'px';
+        player.style.top = playerPosition.y * 54 + offset + 'px';
+
+        currentCell.style.display = 'block';
+
+        // Use requestAnimationFrame to ensure rendering is complete
+        requestAnimationFrame(() => {
+            resolve();
+        });
+    });
+}
+
+function delayMove(move){
+    return new Promise((resolve, reject)=>{
+        setTimeout(() => {
+            // console.log('moving');
+            movePlayer(move);
+            resolve()
+        }, 10);
+    })
+}
 function shootArrow() {
     if (messageDisplay.textContent !== '') {
         return;
@@ -396,23 +408,6 @@ function shootArrow() {
     }
 }
 
-leftButton.addEventListener('click', () => movePlayer('left'));
-rightButton.addEventListener('click', () => movePlayer('right'));
-upButton.addEventListener('click', () => movePlayer('up'));
-downButton.addEventListener('click', () => movePlayer('down'));
-shootButton.addEventListener('click', shootArrow);
-
-function updatePlayerPosition() {
-    player.style.left = playerPosition.x * 52 + 'px';
-    player.style.top = playerPosition.y * 53.5 + 'px';
-
-    const currentCell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
-
-    currentCell.style.display = 'block';
-
-    player.style.transform = 'translate(+75%, +75%)'; // Center the player in the cell
-}
-
 function placeRandomElementAvoidingAdjacent(element, position, avoidPositions) {
     let randomX, randomY;
     do {
@@ -422,8 +417,8 @@ function placeRandomElementAvoidingAdjacent(element, position, avoidPositions) {
 
     position.x = randomX;
     position.y = randomY;
-    element.style.left = randomX * 52 + 'px';
-    element.style.top = randomY * 53.5 + 'px';
+    element.style.left = randomX * 54+offset + 'px';
+    element.style.top = randomY * 54+offset  + 'px';
 }
 
 
@@ -449,7 +444,7 @@ function initializeGame() {
     avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y + 1 });
     avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y - 1 });
 
-    wumpus.style.transform = 'translate(+75%, +75%)';
+    // wumpus.style.transform = 'translate(+75%, +75%)';
     const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${wumpusPosition.x}"][data-y="${wumpusPosition.y}"]`);
     cell_elements.appendChild(wumpus);
 
@@ -461,9 +456,9 @@ function initializeGame() {
         const pit = document.createElement('div');
         pit.className = 'pit';
         pit.id = i;
-        pit.style.left = pitPosition.x * 52 + 'px';
-        pit.style.top = pitPosition.y * 53.5 + 'px';
-        pit.style.transform = 'translate(+75%, +75%)';
+        pit.style.left = pitPosition.x * 54 + offset+ 'px';
+        pit.style.top = pitPosition.y * 54 +offset+ 'px';
+        // pit.style.transform = 'translate(+75%, +75%)';
         const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${pitPosition.x}"][data-y="${pitPosition.y}"]`);
         cell_elements.appendChild(pit);
 
