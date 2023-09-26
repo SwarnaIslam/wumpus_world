@@ -1,29 +1,28 @@
 const player = document.getElementById('player');
-const wumpus = document.getElementById('wumpus');
-const pit1 = document.getElementById('pit1');
-const pit2 = document.getElementById('pit2');
-const pit3 = document.getElementById('pit3');
 const gridContainer = document.getElementById('grid-container');
+const leftButton = document.getElementById('left');
+const rightButton = document.getElementById('right');
+const upButton = document.getElementById('up');
+const downButton = document.getElementById('down');
+const shootButton = document.getElementById('shoot');
 const scoreDisplay = document.getElementById('score');
 const arrowsDisplay = document.getElementById('arrows');
 const messageDisplay = document.getElementById('message');
 const placeBridgeButton = document.getElementById('placeBridge');
 
 let playerPosition = { x: 0, y: 0 };
-let wumpusPosition = { x: 0, y: 0 };
 let score = 0;
-let arrows = 3;
+let arrows = 10;
 let pits = [];
+let wumpuses = [];
 let recordedPositions = Array.from({ length: 10 }, () => []);
 let possibleMoves = [];
-
+let avoidPositions = [];
 
 // Initialize the grid
 for (let i = 0; i < 100; i++) {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
-    cell.style.marginTop="1px"
-    cell.style.marginLeft="1px"
     const cell_elements = document.createElement('div');
     cell_elements.className = 'grid-cell-elements';
     cell_elements.setAttribute('data-x', i % 10);
@@ -33,9 +32,8 @@ for (let i = 0; i < 100; i++) {
 }
 const currentCell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${playerPosition.x}"][data-y="${playerPosition.y}"]`);
 const cellWidth = window.getComputedStyle(currentCell.parentElement).width;
-const width=parseInt(cellWidth)
-
-const offset=width/2-20/2;
+const width = parseInt(cellWidth)
+const offset = width / 2 - 20 / 2;
 
 function updateScore() {
     score++;
@@ -60,16 +58,29 @@ function checkPitCollisions() {
     return false; // No collision with any pit
 }
 
+function checkWumpusCollisions() {
+    for (const wumpusPosition of wumpuses) {
+        if (checkCollision(playerPosition, wumpusPosition)) {
+            return true; // Collision detected
+        }
+    }
+    return false; // No collision with any pit
+}
+
+function makeCellSafe() {
+
+}
+
 function recordPosition(positionX, positionY) {
     const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${positionX}"][data-y="${positionY}"]`);
     const cellExists = recordedPositions[positionY].some(cell => cell.x === positionX && cell.y === positionY);
 
     if (!cellExists) {
-        if (cell.textContent.includes('Stench')) {
-            recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'Stench' });
+        if (cell.textContent.includes('stench')) {
+            recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'stench' });
         }
-        else if (cell.textContent.includes('Breeze')) {
-            recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'Breeze' });
+        else if (cell.textContent.includes('breeze')) {
+            recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'breeze' });
         }
         else {
             recordedPositions[positionY].push({ x: positionX, y: positionY, content: 'Empty' });
@@ -106,11 +117,208 @@ function checkEmptyCell(positionX, positionY) {
     }
 }
 
-function checkEmptyNeighbourCell() {
+function checkStenchAndBreezeCombinationAroundCells(positionX, positionY) {
+    const directions = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    let breezeExists = false;
+    let stenchExists = false;
+
+    for (const { dx, dy } of directions) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
+            const isVisited = recordedPositions[newY].some(cell => cell.x === newX && cell.y === newY);
+            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+            if (isVisited && cell && cell.textContent) {
+
+                if (cell.textContent.includes('stench')) {
+                    stenchExists = true;
+                    // console.log('Stench: ', newX, newY);
+                }
+                else if (cell.textContent.includes('breeze')) {
+                    breezeExists = true;
+                    // console.log('Breeze: ', newX, newY);
+                }
+
+                if (cell.textContent.includes('breeze') && cell.textContent.includes('stench')) {
+                    breezeExists = false;
+                    stenchExists = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (stenchExists && breezeExists) {
+        // console.log('Found an Cobiined Cell for: ', positionX, positionY);
+        const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
+
+        possibleMoves[cellIndex].danger = 0;
+    }
+}
+
+function markSafeCells(positionX, positionY) {
+    const directions = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    for (const { dx, dy } of directions) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
+            const isVisited = recordedPositions[newY].some(cell => cell.x === newX && cell.y === newY);
+            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+            if (!isVisited && cell) {
+                const cellIndex = possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY);
+                // console.log('marked cell: ', newX, newY)
+                possibleMoves[cellIndex].danger = 0;
+            }
+        }
+    }
+}
+
+function checkForVisitedCellsAroundBreezes(positionX, positionY) {
+    const directions = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    let visitedCellCount = 0;
+    let adjacentCellCount = 0;
+
+    for (const { dx, dy } of directions) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
+            const isVisited = recordedPositions[newY].some(cell => cell.x === newX && cell.y === newY);
+            adjacentCellCount = adjacentCellCount + 1;
+
+            if (isVisited) {
+                visitedCellCount = visitedCellCount + 1;
+            }
+        }
+    }
+
+    if (visitedCellCount === adjacentCellCount - 1) {
+        // console.log('Recorded Position: ', recordedPositions);
+        // console.log('Found a sure pit in: ', positionX, positionY, 'for: ', visitedCellCount, adjacentCellCount);
+        return true;
+    }
+
+    return false;
+}
+
+function checkForPitsUsingBreeze(positionX, positionY) {
+    const directions = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    let pitExists = false;
+
+    for (const { dx, dy } of directions) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
+            const isVisited = recordedPositions[newY].some(cell => cell.x === newX && cell.y === newY);
+            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+            if (isVisited && cell && cell.textContent && checkForVisitedCellsAroundBreezes(newX, newY)) {
+                if (cell.textContent.includes('breeze')) {
+                    // console.log('Found a Sure pit: ', positionX, positionY);
+                    pitExists = true;
+                }
+            }
+        }
+    }
+
+    if (pitExists) {
+        for (const { dx, dy } of directions) {
+            const newX = positionX + dx;
+            const newY = positionY + dy;
+
+            if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10) {
+                const isVisited = recordedPositions[newY].some(cell => cell.x === newX && cell.y === newY);
+                const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+                if (isVisited && cell && cell.textContent) {
+                    markSafeCells(newX, newY);
+                }
+            }
+        }
+
+        const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
+        possibleMoves[cellIndex].danger = 4;
+    }
+
+
+}
+
+function checkForSafeCells() {
     // console.log('all Possible moves: ', possibleMoves);
     for (const move of possibleMoves) {
-        // console.log("going with move: ", move);
+        checkForPitsUsingBreeze(move.x, move.y);
         checkEmptyCell(move.x, move.y);
+        checkStenchAndBreezeCombinationAroundCells(move.x, move.y);
+    }
+}
+
+function checkForWumpus(positionX, positionY) {
+    const directions = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    let neighbourCells = 0;
+    let stenchCells = 0;
+
+    for (const { dx, dy } of directions) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10 && arrows > 0) {
+            neighbourCells = neighbourCells + 1;
+            const isVisited = recordedPositions[newY].some(cell => cell.x === newX && cell.y === newY);
+            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+            if (isVisited && cell && cell.textContent) {
+                if (cell.textContent.includes('stench')) {
+                    stenchCells = stenchCells + 1;
+                }
+            }
+        }
+    }
+
+    // console.log(positionX, positionY, stenchCells/neighbourCells);
+
+    if (stenchCells / neighbourCells >= 0.5) {
+        const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
+        possibleMoves[cellIndex].danger = 0;
+        possibleMoves[cellIndex].wumpus = 'wumpus_exist';
+    }
+    else if (stenchCells / neighbourCells > 0) {
+        const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
+        possibleMoves[cellIndex].wumpus = 'possible_wumpus_exist';
     }
 }
 
@@ -136,25 +344,34 @@ function getPossibleMoves(playerX, playerY) {
             const isVisited = recordedPositions[playerY].some(cell => cell.x === playerX && cell.y === playerY);
 
             if (!isVisited) {
-                if (cell.textContent.includes('Stench')) {
+                if (cell.textContent.includes('stench')) {
                     if (cellIndex !== -1) {
                         possibleMoves[cellIndex].danger = possibleMoves[cellIndex].danger + 1;
                     }
                     else {
-                        possibleMoves.push({ x: newX, y: newY, danger: 1 });
+                        possibleMoves.push({ x: newX, y: newY, danger: 1, wumpus: 'null' });
                     }
                 }
-                else if (cell.textContent.includes('Breeze')) {
+                else if (cell.textContent.includes('breeze')) {
                     if (cellIndex !== -1) {
 
                         possibleMoves[cellIndex].danger = possibleMoves[cellIndex].danger + 1;
                     }
                     else {
-                        possibleMoves.push({ x: newX, y: newY, danger: 1 });
+                        possibleMoves.push({ x: newX, y: newY, danger: 1, wumpus: 'null' });
+                    }
+                }
+                else if (cell.textContent.includes('breeze') && cell.textContent.includes('stench')) {
+                    // console.log('got a combine cell');
+                    if (cellIndex !== -1) {
+                        possibleMoves[cellIndex].danger = possibleMoves[cellIndex].danger + 2;
+                    }
+                    else {
+                        possibleMoves.push({ x: newX, y: newY, danger: 2, wumpus: 'null' });
                     }
                 }
                 else if (cellIndex === -1) {
-                    possibleMoves.push({ x: newX, y: newY, danger: 0 });
+                    possibleMoves.push({ x: newX, y: newY, danger: 0, wumpus: 'null' });
                 }
             }
         }
@@ -166,7 +383,9 @@ function getPossibleMoves(playerX, playerY) {
 
     possibleMoves = possibleMoves.filter(cell => !recordedPositions.some(subarray => subarray.some(recordedCell => recordedCell.x === cell.x && recordedCell.y === cell.y)));
 
-    checkEmptyNeighbourCell();
+    checkForSafeCells();
+
+    possibleMoves = possibleMoves.filter(cell => cell.danger !== 4);
 }
 
 // Define data structures
@@ -264,10 +483,8 @@ function findPath(startX, startY, targetX, targetY) {
             }
         }
     }
-
-    // No path found
-    return [];
 }
+
 
 async function movePlayer(direction) {
     if (messageDisplay.textContent !== '') {
@@ -297,21 +514,25 @@ async function movePlayer(direction) {
             break;
     }
 
-    await updatePlayerPosition(); // Wait for player position update
-
-    // Now, check for collisions and other game logic
-    if (checkCollision(playerPosition, wumpusPosition)) {
-        messageDisplay.textContent = 'You encountered the Wumpus! Game Over';
+    await updatePlayerPosition();
+    if (checkWumpusCollisions()) {
+        messageDisplay.textContent = 'You were encountered by wumpus! Game Over';
         alert(messageDisplay.textContent);
     } else if (checkPitCollisions()) {
         messageDisplay.textContent = 'You fell into a pit! Game Over';
         alert(messageDisplay.textContent);
     }
-
     updateScore();
 
     const nextBestMove = selectBestPath(playerPosition.x, playerPosition.y);
+    if (nextBestMove === null)
+        return
+
+    // console.log('Next move: ', nextBestMove);
+
     const path = findPath(playerPosition.x, playerPosition.y, nextBestMove.x, nextBestMove.y);
+    // console.log('Path to next Move: ', path);
+
     const nextMove = path[1];
 
     const nextMoveDirection = [
@@ -326,13 +547,133 @@ async function movePlayer(direction) {
         const newY = playerPosition.y + dy;
 
         if (newX === nextMove.x && newY === nextMove.y) {
-            // Move to the next cell
-            movePlayer(move);
-            console.log(move);
-            break;
+            if (nextBestMove.wumpus === 'wumpus_exist' && nextMove.x === nextBestMove.x && nextMove.y === nextBestMove.y) {
+                shootArrow(nextBestMove);
+                movePlayer(move);
+                break;
+            }
+            // else if (nextBestMove.wumpus === 'possible_wumpus_exist' && nextMove.x === nextBestMove.x && nextMove.y === nextBestMove.y) {
+            //     setTimeout(() => {
+            //         shootArrow(nextBestMove);
+            //         // console.log(nextBestMove);
+            //         movePlayer(move);
+            //     }, 1000);
+            //     break;
+            // }
+            else {
+                movePlayer(move);
+                break;
+            }
+        }
+    }
+
+}
+
+
+function updateDangerForStenchNeighbourCells(positionX, positionY) {
+    const nextMoveDirection = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    for (const { dx, dy } of nextMoveDirection) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        const existsInPossibleMoves = possibleMoves.some(cell => cell.x === newX && cell.y === newY);
+
+        if (existsInPossibleMoves) {
+            const cellIndex = possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY);
+            possibleMoves[cellIndex].danger = possibleMoves[cellIndex].danger - 1;
         }
     }
 }
+
+function checkIfStenchIsNecessary(positionX, positionY) {
+    const nextMoveDirection = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    for (const { dx, dy } of nextMoveDirection) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (
+            newX >= 0 && newX < 10 &&
+            newY >= 0 && newY < 10
+        ) {
+            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+            // Check if the neighboring cell contains a wumpus or pit element
+            const hasWumpus = cell.querySelector('.wumpus');
+
+            if (hasWumpus) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function removeStenches(positionX, positionY) {
+    const nextMoveDirection = [
+        { dx: -1, dy: 0, move: 'left' },
+        { dx: 1, dy: 0, move: 'right' },
+        { dx: 0, dy: -1, move: 'up' },
+        { dx: 0, dy: 1, move: 'down' },
+    ];
+
+    for (const { dx, dy } of nextMoveDirection) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
+
+        if (cell) {
+            if (cell.textContent.includes('stench') && !checkIfStenchIsNecessary(newX, newY)) {
+                updateDangerForStenchNeighbourCells(newX, newY);
+                if (cell.textContent.includes('breeze')) {
+                    cell.textContent = 'breeze';
+                }
+                else {
+                    cell.textContent = '';
+                }
+            }
+        }
+    }
+}
+
+function shootArrow(wumpusPosition) {
+    // const nextMoveDirection = [
+    //     { dx: -1, dy: 0, move: 'left' },
+    //     { dx: 1, dy: 0, move: 'right' },
+    //     { dx: 0, dy: -1, move: 'up' },
+    //     { dx: 0, dy: 1, move: 'down' },
+    // ];
+
+    if (arrows > 0) {
+        const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${wumpusPosition.x}"][data-y="${wumpusPosition.y}"]`);
+        if (cell) {
+            const wumpusElement = cell.querySelector('.wumpus');
+            if (wumpusElement) {
+                // console.log('Wumpus Killed!');
+                wumpusElement.remove();
+
+                removeStenches(wumpusPosition.x, wumpusPosition.y);
+                wumpuses = wumpuses.filter(cell => cell.x !== wumpusPosition.x && cell.y !== wumpusPosition.y);
+            }
+        }
+        updateArrows();
+        // console.log(arrows);
+    }
+}
+
 
 async function updatePlayerPosition() {
     return new Promise((resolve, reject) => {
@@ -350,65 +691,8 @@ async function updatePlayerPosition() {
     });
 }
 
-function delayMove(move){
-    return new Promise((resolve, reject)=>{
-        setTimeout(() => {
-            // console.log('moving');
-            movePlayer(move);
-            resolve()
-        }, 10);
-    })
-}
-function shootArrow() {
-    if (messageDisplay.textContent !== '') {
-        return;
-    }
 
-    if (arrows > 0) {
-        updateArrows();
-        if (checkCollision(playerPosition, wumpusPosition)) {
-            messageDisplay.textContent = 'You shot the Wumpus and won! Game Over';
-            alert(messageDisplay.textContent)
-            return;
-        } else {
-            const direction = prompt('Enter the direction to shoot (left, right, up, down):');
-            if (direction) {
-                // Calculate the new position based on the direction
-                const newPosition = { ...playerPosition };
-                switch (direction) {
-                    case 'left':
-                        newPosition.x--;
-                        break;
-                    case 'right':
-                        newPosition.x++;
-                        break;
-                    case 'up':
-                        newPosition.y--;
-                        break;
-                    case 'down':
-                        newPosition.y++;
-                        break;
-                    default:
-                        alert('Invalid direction. Use left, right, up, or down.');
-                        return;
-                }
-
-                // Check if the arrow hit the Wumpus
-                if (checkCollision(newPosition, wumpusPosition)) {
-                    messageDisplay.textContent = 'You shot the Wumpus and won! Game Over';
-                    alert(messageDisplay.textContent)
-                } else {
-                    messageDisplay.textContent = 'You missed the Wumpus.';
-                    alert(messageDisplay.textContent)
-                }
-            }
-        }
-    } else {
-        alert('Out of arrows!');
-    }
-}
-
-function placeRandomElementAvoidingAdjacent(element, position, avoidPositions) {
+function placeRandomElementAvoidingAdjacent(element, position) {
     let randomX, randomY;
     do {
         randomX = Math.floor(Math.random() * 10);
@@ -417,17 +701,30 @@ function placeRandomElementAvoidingAdjacent(element, position, avoidPositions) {
 
     position.x = randomX;
     position.y = randomY;
-    element.style.left = randomX * 54+offset + 'px';
-    element.style.top = randomY * 54+offset  + 'px';
+    element.style.left = randomX * 54 + offset + 'px';
+    element.style.top = randomY * 54 + offset + 'px';
 }
 
+function avoidElementArea(elementPosition) {
+    avoidPositions.push({ x: elementPosition.x, y: elementPosition.y });
 
-// Initialize the game
-function initializeGame() {
-    recordedPositions[0].push({ x: 0, y: 0, content: 'Empty' });
+    avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y });
+    avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y });
+    avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 1 });
+    avoidPositions.push({ x: elementPosition.x, y: elementPosition.y - 1 });
 
-    const avoidPositions = [];
+    avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y + 1 });
+    avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y - 1 });
+    avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y + 1 });
+    avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y - 1 });
 
+    avoidPositions.push({ x: elementPosition.x + 2, y: elementPosition.y });
+    avoidPositions.push({ x: elementPosition.x - 2, y: elementPosition.y });
+    avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 2 });
+    avoidPositions.push({ x: elementPosition.x, y: elementPosition.y - 2 });
+}
+
+function avoidPlayerArea() {
     avoidPositions.push({ x: playerPosition.x, y: playerPosition.y });
     avoidPositions.push({ x: playerPosition.x + 1, y: playerPosition.y });
     avoidPositions.push({ x: playerPosition.x, y: playerPosition.y + 1 });
@@ -435,86 +732,90 @@ function initializeGame() {
     avoidPositions.push({ x: playerPosition.x + 2, y: playerPosition.y });
     avoidPositions.push({ x: playerPosition.x, y: playerPosition.y + 2 });
     avoidPositions.push({ x: playerPosition.x + 2, y: playerPosition.y + 2 });
+}
 
-    // Place the Wumpus
-    placeRandomElementAvoidingAdjacent(wumpus, wumpusPosition, avoidPositions);
-    avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y });
-    avoidPositions.push({ x: wumpusPosition.x + 1, y: wumpusPosition.y });
-    avoidPositions.push({ x: wumpusPosition.x - 1, y: wumpusPosition.y });
-    avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y + 1 });
-    avoidPositions.push({ x: wumpusPosition.x, y: wumpusPosition.y - 1 });
+function placeElements(numberOfElements, elementName) {
 
-    // wumpus.style.transform = 'translate(+75%, +75%)';
-    const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${wumpusPosition.x}"][data-y="${wumpusPosition.y}"]`);
-    cell_elements.appendChild(wumpus);
+    console.log(numberOfElements+" "+elementName)
 
-    const numberOfPits = 10;
-    for (let i = 0; i < numberOfPits; i++) {
-        const pitPosition = { id: `${i}` };
-        placeRandomElementAvoidingAdjacent(document.createElement('div'), pitPosition, avoidPositions);
-        avoidPositions.push({ x: pitPosition.x, y: pitPosition.y });
-        const pit = document.createElement('div');
-        pit.className = 'pit';
-        pit.id = i;
-        pit.style.left = pitPosition.x * 54 + offset+ 'px';
-        pit.style.top = pitPosition.y * 54 +offset+ 'px';
-        // pit.style.transform = 'translate(+75%, +75%)';
-        const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${pitPosition.x}"][data-y="${pitPosition.y}"]`);
-        cell_elements.appendChild(pit);
+    for (let i = 0; i < numberOfElements; i++) {
+        const elementPosition = { id: `${i}` };
+        placeRandomElementAvoidingAdjacent(document.createElement('div'), elementPosition);
+        avoidElementArea(elementPosition);
+        const element = document.createElement('div');
+        element.className = elementName;
+        element.id = i;
+        element.style.left = elementPosition.x * 54 + offset + 'px';
+        element.style.top = elementPosition.y * 54 + offset + 'px';
+        const cell_elements = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${elementPosition.x}"][data-y="${elementPosition.y}"]`);
+        cell_elements.appendChild(element);
 
-        pits.push(pitPosition);
-    }
-
-    // Display stench text in the cells around the Wumpus at the beginning
-    const surroundingCells = [
-        { dx: 0, dy: -1 }, // Above
-        { dx: 0, dy: 1 },  // Below
-        { dx: -1, dy: 0 }, // Left
-        { dx: 1, dy: 0 }   // Right
-    ];
-
-    for (const { dx, dy } of surroundingCells) {
-        const cellX = wumpusPosition.x + dx;
-        const cellY = wumpusPosition.y + dy;
-
-        // Check if the cell is within the grid boundaries
-        if (cellX >= 0 && cellX < 10 && cellY >= 0 && cellY < 10 && !pits.some(pit => pit.x === cellX && pit.y === cellY)) {
-            const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`);
-            cell.textContent = "Stench";
-            cell.classList.add("stench");
+        if (elementName == 'pit') pits.push(elementPosition);
+        else if (elementName == 'wumpus'){
+            console.log("ashse")
+             wumpuses.push(elementPosition);
         }
     }
+}
 
-    // Display bridge text around the pits at the beginning
-
-    for (const pitPosition of pits) {
-        const surroundingCellsPit = [
+function placeElementHints(elements, hintName) {
+    for (const elementPosition of elements) {
+        const surroundingCells = [
             { dx: 0, dy: -1 }, // Above
             { dx: 0, dy: 1 },  // Below
             { dx: -1, dy: 0 }, // Left
             { dx: 1, dy: 0 }   // Right
         ];
 
-        for (const { dx, dy } of surroundingCellsPit) {
-            const cellX = pitPosition.x + dx;
-            const cellY = pitPosition.y + dy;
-
+        for (const { dx, dy } of surroundingCells) {
+            const cellX = elementPosition.x + dx;
+            const cellY = elementPosition.y + dy;
 
             // Check if the cell is within the grid boundaries
             if (
                 cellX >= 0 && cellX < 10 &&
-                cellY >= 0 && cellY < 10 &&
-                !document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`).textContent.includes("Stench") &&
-                !document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`).textContent.includes("Breeze") &&
-                !pits.some(pit => pit.x === cellX && pit.y === cellY) &&
-                !(cellX === wumpusPosition.x && cellY === wumpusPosition.y)
+                cellY >= 0 && cellY < 10
             ) {
                 const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${cellX}"][data-y="${cellY}"]`);
-                cell.textContent = "Breeze";
-                cell.classList.add("breeze");
+
+                // Check if the neighboring cell contains a wumpus or pit element
+                // const hasWumpus = cell.querySelector('.wumpus');
+                // const hasPit = cell.querySelector('.pit');
+
+                // if (hasWumpus || hasPit) {
+                //     // If there's a wumpus or pit in any neighboring cell, set the flag and break the loop
+                //     continue;
+                // }
+
+
+                if (cell.textContent) {
+                    if (cell.textContent.includes('breeze') && hintName === 'stench') {
+                        cell.textContent = cell.textContent.concat(` ${hintName}`);
+                    } else if (cell.textContent.includes('stench') && hintName === 'breeze') {
+                        cell.textContent = cell.textContent.concat(` ${hintName}`);
+                    }
+                } else {
+                    cell.textContent = hintName;
+                    cell.classList.add(hintName);
+                }
             }
         }
     }
+}
+
+
+
+// Initialize the game
+function initializeGame() {
+    recordedPositions[0].push({ x: 0, y: 0, content: 'Empty' });
+    avoidPlayerArea();
+
+    placeElements(3, 'wumpus');
+
+    placeElements(10, 'pit');
+
+    placeElementHints(pits, 'breeze');
+    placeElementHints(wumpuses, 'stench');
 }
 
 function calculateDistance(x1, y1, x2, y2) {
@@ -524,6 +825,12 @@ function calculateDistance(x1, y1, x2, y2) {
 
 function selectBestPath(playerX, playerY) {
     getPossibleMoves(playerX, playerY);
+
+    console.log('possible moves: ', possibleMoves);
+
+    for (const move of possibleMoves) {
+        checkForWumpus(move.x, move.y);
+    }
 
     possibleMoves.sort((a, b) => {
         // Sort first by danger (ascending order)
@@ -538,7 +845,12 @@ function selectBestPath(playerX, playerY) {
         return distanceA - distanceB;
     });
 
-    // console.log('All possible moves: ', possibleMoves);
+    if (possibleMoves.length === 0) {
+        return null
+    }
+    if (possibleMoves[0].danger === 1 && possibleMoves.some(cell => cell.wumpus === 'possible_wumpus_exist')) {
+        return possibleMoves.find(cell => cell.wumpus === 'possible_wumpus_exist');
+    }
 
     return possibleMoves[0];
 }
