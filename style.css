@@ -2,28 +2,23 @@ body {
     font-family: Arial, sans-serif;
 }
 
-
 .game-container {
-    position: relative; 
-    width: 1120px;
-    height: 550px;
-    margin: 20px auto;
-    outline: 1px solid black;
-  }
+    display: inline-block;
+    position: relative;
+    margin: 20px;
+}
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(10, 54px);
-    
+    grid-template-columns: repeat(10, 50px);
+    grid-gap: 2px;
 }
 
-
 .grid-cell {
-    width: 52px;
-    height: 52px;
-    background: #8b4513;
-    border: 1px solid black;
-    
+    width: 50px;
+    height: 50px;
+    background: #8B4513;
+    border: 1px solid #000;
 }
 
 .grid-cell-elements {
@@ -35,12 +30,12 @@ body {
 
 .grid-cell.breeze {
     color: #000;
-    /* display: none; */
+    /* display: block; */
 }
 
 .grid-cell.stench {
     color: #000;
-    /* display: none; */
+    /* display: block; */
 }
 
 #player {
@@ -67,11 +62,19 @@ body {
     background-color: #000;
     position: absolute;
     z-index: 1;
-    /* display: none; */
+    /* display: block; */
 }
 
+.controls {
+    text-align: center;
+    margin-top: 20px;
+}
 
-
+button {
+    font-size: 16px;
+    padding: 10px 20px;
+    margin: 5px;
+}
 
 #score {
     font-size: 18px;
