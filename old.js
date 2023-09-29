@@ -112,10 +112,7 @@ function checkEmptyCell(positionX, positionY) {
             const cell = document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${newX}"][data-y="${newY}"]`);
 
             if (isVisited && cell && !cell.textContent) {
-                // console.log('Found an Empty Cell at: ', newX, newY, ' for cell: ', positionX, positionY);
                 const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
-
-                // console.log(cellIndex, dx, dy);
 
                 possibleMoves[cellIndex].danger = 0;
             }
@@ -146,11 +143,9 @@ function checkStenchAndBreezeCombinationAroundCells(positionX, positionY) {
 
                 if (cell.textContent.includes('stench')) {
                     stenchExists = true;
-                    // console.log('Stench: ', newX, newY);
                 }
                 else if (cell.textContent.includes('breeze')) {
                     breezeExists = true;
-                    // console.log('Breeze: ', newX, newY);
                 }
 
                 if (cell.textContent.includes('breeze') && cell.textContent.includes('stench')) {
@@ -163,7 +158,6 @@ function checkStenchAndBreezeCombinationAroundCells(positionX, positionY) {
     }
 
     if (stenchExists && breezeExists) {
-        // console.log('Found an Cobiined Cell for: ', positionX, positionY);
         const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
 
         possibleMoves[cellIndex].danger = 0;
@@ -188,7 +182,6 @@ function markSafeCells(positionX, positionY) {
 
             if (!isVisited && cell) {
                 const cellIndex = possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY);
-                console.log('marked cell: ', newX, newY)
                 possibleMoves[cellIndex].danger = 0;
             }
         }
@@ -224,8 +217,6 @@ function checkForVisitedCellsAroundBreezesOrPits(positionX, positionY, hintName)
     }
 
     if (hintCellCount === adjacentCellCount - 1) {
-        // console.log('Recorded Position: ', recordedPositions);
-        // console.log('Found a sure pit in: ', positionX, positionY, 'for: ', visitedCellCount, adjacentCellCount);
         return true;
     }
 
@@ -288,7 +279,6 @@ function checkForPitsAndWumpusUsingBreezeAndStench(positionX, positionY) {
 }
 
 function checkForSafeCells() {
-    // console.log('all Possible moves: ', possibleMoves);
     for (const move of possibleMoves) {
         checkForPitsAndWumpusUsingBreezeAndStench(move.x, move.y);
         checkEmptyCell(move.x, move.y);
@@ -324,7 +314,6 @@ function checkForWumpus(positionX, positionY) {
         }
     }
 
-    // console.log(positionX, positionY, stenchCells/neighbourCells);
 
     if (stenchCells / neighbourCells >= 0.5) {
         const cellIndex = possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
@@ -403,7 +392,6 @@ function getPossibleMoves(playerX, playerY) {
                     }
                 }
                 else if (cell.textContent.includes('breeze') && cell.textContent.includes('stench')) {
-                    console.log('got a combine cell');
                     if (cellIndex !== -1) {
                         possibleMoves[cellIndex].danger = possibleMoves[cellIndex].danger + 3;
                     }
@@ -420,7 +408,6 @@ function getPossibleMoves(playerX, playerY) {
 
     recordPosition(playerPosition.x, playerPosition.y);
 
-    // console.log('Recorded move: ', recordedPositions);
 
     possibleMoves = possibleMoves.filter(cell => !recordedPositions.some(subarray => subarray.some(recordedCell => recordedCell.x === cell.x && recordedCell.y === cell.y)));
 
@@ -559,10 +546,8 @@ function movePlayer(direction) {
     updateScore();
 
     const nextBestMove = selectBestPath(playerPosition.x, playerPosition.y);
-    // console.log('Next move: ', nextBestMove);
 
     const path = findPath(playerPosition.x, playerPosition.y, nextBestMove.x, nextBestMove.y);
-    // console.log('Path to next Move: ', path);
 
     const nextMove = path[1];
 
@@ -581,22 +566,12 @@ function movePlayer(direction) {
             if (nextBestMove.wumpus === 'wumpus_exist' && nextMove.x === nextBestMove.x && nextMove.y === nextBestMove.y) {
                 setTimeout(() => {
                     shootArrow(nextBestMove);
-                    // console.log(nextBestMove);
                     movePlayer(move);
                 }, 1000);
                 break;
             }
-            // else if (nextBestMove.wumpus === 'possible_wumpus_exist' && nextMove.x === nextBestMove.x && nextMove.y === nextBestMove.y) {
-            //     setTimeout(() => {
-            //         shootArrow(nextBestMove);
-            //         // console.log(nextBestMove);
-            //         movePlayer(move);
-            //     }, 1000);
-            //     break;
-            // }
             else {
                 setTimeout(() => {
-                    // console.log(nextBestMove);
                     movePlayer(move);
                 }, 100);
                 break;
@@ -705,7 +680,6 @@ function shootArrow(wumpusPosition) {
         if (cell) {
             const wumpusElement = cell.querySelector('.wumpus');
             if (wumpusElement) {
-                console.log('Wumpus Killed!');
                 wumpusElement.remove();
 
                 removeStenches(wumpusPosition.x, wumpusPosition.y);
@@ -713,7 +687,6 @@ function shootArrow(wumpusPosition) {
             }
         }
         updateArrows();
-        console.log(arrows);
     }
 }
 
@@ -881,17 +854,6 @@ function selectBestPath(playerX, playerY) {
         return distanceA - distanceB;
     });
 
-    // if (possibleMoves[0].wumpus === 'possible_wumpus_exist') {
-    //     for (const move in possibleMoves) {
-    //         // console.log(possibleMoves[move].wumpus)
-    //         if (possibleMoves[move].wumpus !== 'possible_wumpus_exist' && possibleMoves[move].danger !== 0) {
-    //             // console.log('This is a move: ', move);
-    //             return possibleMoves[move];
-    //         }
-    //     }
-    // }
-
-    console.log('possible moves: ', possibleMoves)
 
     return possibleMoves[0];
 }

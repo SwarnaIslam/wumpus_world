@@ -1,4 +1,4 @@
-import { generateBoard } from './boardGeneration.js';
+import { generateBoard } from '/boardGeneration.js';
 import { updatePlayerPosition, movePlayer } from './gameEngine.js';
 import * as Globals from './global.js';
 

@@ -226,7 +226,6 @@ function selectBestMove(playerX, playerY) {
 
     sortMovesByDistanceAndDanger();
 
-    console.log(Globals.possibleMoves);
 
     const bestMove = Globals.possibleMoves[0];
 

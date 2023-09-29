@@ -1,7 +1,7 @@
 import * as Globals from "./global.js"
 import { hasElement, selectBestMove } from "./gameLogics.js";
 import { findPath } from "./pathFinder.js";
-
+let isGameOver=false
 function checkCollision(position1, position2) {
     return position1.x === position2.x && position1.y === position2.y;
 }
@@ -117,7 +117,6 @@ function shootArrow(wumpusPosition) {
         if (cell) {
             const wumpusElement = cell.querySelector('.wumpus');
             if (wumpusElement) {
-                console.log('Wumpus Killed!');
                 wumpusElement.remove();
 
                 removeStenches(wumpusPosition.x, wumpusPosition.y);
@@ -127,22 +126,26 @@ function shootArrow(wumpusPosition) {
             }
         }
         // updateArrows();
-        console.log(arrows);
     }
 }
 
 async function updatePlayerPosition() {
-    player.style.left = Globals.playerPosition.x * 52 + 'px';
-    player.style.top = Globals.playerPosition.y * 53.5 + 'px';
+    return new Promise((resolve, reject) => {
+        player.style.left = Globals.playerPosition.x * 54 + Globals.offset + 'px';
+        player.style.top = Globals.playerPosition.y * 54 + Globals.offset + 'px';
+    
+        const currentCell = Globals.findElement(Globals.playerPosition.x, Globals.playerPosition.y);
+    
+        currentCell.style.display = 'block';
+        requestAnimationFrame(() => {
+            resolve();
+        });
+    });
 
-    const currentCell = Globals.findElement(Globals.playerPosition.x, Globals.playerPosition.y);
-
-    currentCell.style.display = 'block';
-
-    player.style.transform = 'translate(+75%, +75%)';
 }
 
 async function movePlayer(direction) {
+    if(isGameOver)return
     switch (direction) {
         case 'left':
             if (Globals.playerPosition.x > 0) {
@@ -181,14 +184,13 @@ async function movePlayer(direction) {
         const newY = Globals.playerPosition.y + dy;
 
         if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
-            console.log(nextBestMove);
             if (isWumpusInNextCell(nextBestMove, nextCellToMove)) {
                 
-                await movePlayerWithDelay(move, true, nextBestMove, 1000);
+                await movePlayerWithDelay(move, true, nextBestMove,10);
                 break;
             }
             else {
-                await movePlayerWithDelay(move, false, nextBestMove, 1000);
+                await movePlayerWithDelay(move, false, nextBestMove, 10);
                 break;
             }
         }
@@ -196,9 +198,11 @@ async function movePlayer(direction) {
 
     if (checkWumpusCollisions()) {
         Globals.messageDisplay.textContent = 'You were encountered by wumpus! Game Over';
+        isGameOver=true
         alert(Globals.messageDisplay.textContent);
     } else if (checkPitCollisions()) {
         Globals.messageDisplay.textContent = 'You fell into a pit! Game Over';
+        isGameOver=true
         alert(Globals.messageDisplay.textContent);
     }
 }

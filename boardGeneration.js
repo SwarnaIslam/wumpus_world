@@ -1,6 +1,7 @@
 import * as Globals from "./global.js";
 import { hasElement } from "./gameLogics.js";
 
+
 function placeRandomElementAvoidingAdjacent(element, position) {
     let randomX, randomY;
     do {
@@ -10,8 +11,8 @@ function placeRandomElementAvoidingAdjacent(element, position) {
 
     position.x = randomX;
     position.y = randomY;
-    element.style.left = randomX * 52 + 'px';
-    element.style.top = randomY * 53.5 + 'px';
+    element.style.left = randomX * 54 + Globals.offset + 'px';
+    element.style.top = randomY * 54 + Globals.offset + 'px';
 }
 
 function avoidPlayerArea(playerPosition) {
@@ -71,9 +72,8 @@ function placeElements(numberOfElements, elementName) {
         const element = document.createElement('div');
         element.className = elementName;
         element.id = i;
-        element.style.left = elementPosition.x * 52 + 'px';
-        element.style.top = elementPosition.y * 53.5 + 'px';
-        element.style.transform = 'translate(+75%, +75%)';
+        element.style.left = elementPosition.x * 54 + Globals.offset + 'px';
+        element.style.top = elementPosition.y * 54 + Globals.offset + 'px';
         const cell_elements = Globals.findElement(elementPosition.x, elementPosition.y);
         cell_elements.appendChild(element);
 
