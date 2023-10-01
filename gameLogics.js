@@ -31,6 +31,10 @@ function findIndexFromPossibleMoves(positionX, positionY) {
     return Globals.possibleMoves.findIndex(cell => cell.x === positionX && cell.y === positionY);
 }
 
+function findIndexFromRecordedPositions(positionX, positionY) {
+    return Globals.recordedPositions[positionY].findIndex(cell => cell.x === positionX && cell.y === positionY);
+}
+
 function calculateDistance(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
@@ -45,6 +49,56 @@ function pushNewPossibleMove(positionX, positionY, dangerLevel) {
         pitExists: false,
         goldExists: false,
     });
+}
+
+function markWumpusInNeighbourCellsOfStench(positionX, positionY) {
+    let visitedCells = 0;
+    let stenchCells = 0;
+
+    for (const { dx, dy } of Globals.neighbourCells) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (Globals.isCellInsideBoard(newX, newY) && isCellVisited(newX, newY)) {
+            visitedCells = visitedCells + 1;
+            const cell = Globals.findElement(newX, newY);
+            if (hasElement(cell, 'stench')) {
+                stenchCells = stenchCells + 1;
+            }
+        }
+    }
+
+    if (visitedCells === stenchCells) {
+        return true;
+    }
+
+    return false;
+}
+
+function checkANdUpdateWumpusInCellUsingStench(positionX, positionY) {
+    let unvisitedCells = 0;
+    let noWumpusInCell = 0;
+    let wumpusPosition = {};
+
+    for (const { dx, dy } of Globals.neighbourCells) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (Globals.isCellInsideBoard(newX, newY) && !isCellVisited(newX, newY)) {
+            unvisitedCells = unvisitedCells + 1;
+            if (!markWumpusInNeighbourCellsOfStench(newX, newY)) {
+                noWumpusInCell = noWumpusInCell + 1;
+            }
+            if (markWumpusInNeighbourCellsOfStench(newX, newY)) {
+                wumpusPosition = { x: newX, y: newY };
+            }
+        }
+    }
+
+    if (noWumpusInCell === unvisitedCells - 1) {
+        const cellIndex = findIndexFromPossibleMoves(wumpusPosition.x, wumpusPosition.y);
+        Globals.possibleMoves[cellIndex].wumpusExists = true;
+    }
 }
 
 function pushNewVisitedCell(positionX, positionY, exisitingElement) {
@@ -63,9 +117,10 @@ function removeVisitedCellsFromPossibleMoves() {
     Globals.setPossibleMoves(Globals.possibleMoves.filter(cell => !Globals.recordedPositions.some(subarray => subarray.some(recordedCell => recordedCell.x === cell.x && recordedCell.y === cell.y))));
 }
 
-function checkAndUpdateWumpusLocationsOnBoard() {
+function checkAndUpdateWumpusAndPitLocationsOnBoard() {
     for (const move of Globals.possibleMoves) {
         checkAndUpdateWumpusInCell(move.x, move.y);
+        checkAndUpdatePitInCell(move.x, move.y);
     }
 }
 
@@ -87,7 +142,6 @@ function checkEmptyCell(positionX, positionY) {
 
 function checkForSafeCells() {
     for (const move of Globals.possibleMoves) {
-        // checkForPitsAndWumpusUsingBreezeAndStench(move.x, move.y);
         checkEmptyCell(move.x, move.y);
         // checkStenchAndBreezeCombinationAroundCells(move.x, move.y);
     }
@@ -136,6 +190,8 @@ function pushPositionInRecordedPositions(positionX, positionY) {
             pushNewVisitedCell(positionX, positionY, 'Empty')
         }
     }
+
+    console.log('hello');
 }
 
 function checkAndUpdateWumpusInCell(positionX, positionY) {
@@ -146,12 +202,13 @@ function checkAndUpdateWumpusInCell(positionX, positionY) {
         const newX = positionX + dx;
         const newY = positionY + dy;
 
-        if (newX >= 0 && newX < 10 && newY >= 0 && newY < 10 && Globals.arrows > 0) {
+        if (Globals.isCellInsideBoard(newX, newY) && Globals.arrows > 0) {
             neighbourCells = neighbourCells + 1;
             const cell = Globals.findElement(newX, newY);
 
             if (isCellVisited(newX, newY) && cell && cell.textContent) {
                 if (hasElement(cell, 'stench')) {
+                    checkANdUpdateWumpusInCellUsingStench(newX, newY);
                     stenchCells = stenchCells + 1;
                 }
             }
@@ -160,8 +217,51 @@ function checkAndUpdateWumpusInCell(positionX, positionY) {
 
     if (stenchCells / neighbourCells >= 0.5) {
         const cellIndex = findIndexFromPossibleMoves(positionX, positionY);
-        setDanger(cellIndex, 0);
         setCellHasWumpus(cellIndex);
+    }
+}
+
+function areAllCellsVisitedAroundBreeze(positionX, positionY) {
+    let neighbourCells = 0;
+    let visitedCells = 0;
+
+    for (const { dx, dy } of Globals.neighbourCells) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (Globals.isCellInsideBoard(newX, newY) && Globals.arrows > 0) {
+            neighbourCells = neighbourCells + 1;
+            const cell = Globals.findElement(newX, newY);
+
+            if (isCellVisited(newX, newY)) {
+                visitedCells = visitedCells + 1;
+            }
+        }
+    }
+
+    if (visitedCells === neighbourCells - 1) {
+        return true;
+    }
+
+    return false;
+}
+
+function checkAndUpdatePitInCell(positionX, positionY) {
+
+    for (const { dx, dy } of Globals.neighbourCells) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (Globals.isCellInsideBoard(newX, newY) && Globals.arrows > 0) {
+            const cell = Globals.findElement(newX, newY);
+
+            if (isCellVisited(newX, newY) && cell && cell.textContent) {
+                if (hasElement(cell, 'breeze') && areAllCellsVisitedAroundBreeze(newX, newY)) {
+                    const cellIndex = findIndexFromPossibleMoves(positionX, positionY);
+                    setCellHasPit(cellIndex);
+                }
+            }
+        }
     }
 }
 
@@ -222,14 +322,36 @@ function selectBestMove(playerX, playerY) {
 
     getPossibleMoves();
 
-    checkAndUpdateWumpusLocationsOnBoard();
+    checkAndUpdateWumpusAndPitLocationsOnBoard();
 
     sortMovesByDistanceAndDanger();
 
 
-    const bestMove = Globals.possibleMoves[0];
+    let bestMove;
+    let bestMoveFound = false;
+
+    for (const move of Globals.possibleMoves) {
+        if (!move.pitExists) {
+            if (move.wumpusExists) {
+                bestMove = move;
+                bestMoveFound = true;
+                break;
+            }
+        }
+    }
+
+    if (!bestMoveFound) {
+        for (const move of Globals.possibleMoves) {
+            if (!move.pitExists) {
+                bestMove = move;
+                break;
+            }
+        }
+    }
+
+    console.log('All possible Moves: ', Globals.possibleMoves);
 
     return bestMove;
 }
 
-export { selectBestMove, isCellVisited , hasElement};
+export { selectBestMove, isCellVisited, hasElement };
