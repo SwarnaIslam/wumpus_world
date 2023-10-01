@@ -143,7 +143,6 @@ function checkEmptyCell(positionX, positionY) {
 function checkForSafeCells() {
     for (const move of Globals.possibleMoves) {
         checkEmptyCell(move.x, move.y);
-        // checkStenchAndBreezeCombinationAroundCells(move.x, move.y);
     }
 }
 
@@ -334,8 +333,6 @@ function getPossibleMoves() {
     }
 
     checkForSafeCells();
-
-    // possibleMoves = possibleMoves.filter(cell => cell.danger !== 4);
 }
 
 function selectBestMove(playerX, playerY) {

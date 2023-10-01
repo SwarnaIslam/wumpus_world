@@ -255,10 +255,12 @@ async function movePlayer(direction) {
     }
 
     if (checkWumpusCollisions()) {
+        Globals.decreaseScore(1000);
         Globals.messageDisplay.textContent = 'You were encountered by wumpus! Game Over';
         isGameOver = true;
         alert(Globals.messageDisplay.textContent);
     } else if (checkPitCollisions()) {
+        Globals.decreaseScore(1000);
         Globals.messageDisplay.textContent = 'You fell into a pit! Game Over';
         isGameOver = true;
         alert(Globals.messageDisplay.textContent);
