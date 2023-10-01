@@ -47,7 +47,7 @@ function placeElementHints(elements, hintName) {
 
 
                 if (cell.textContent) {
-                    if(hasElement(cell,'stench') && hasElement(cell, 'breeze')){
+                    if (hasElement(cell, 'stench') && hasElement(cell, 'breeze')) {
                         continue;
                     }
                     else if (hasElement(cell, 'breeze') && hintName === 'stench') {
@@ -68,7 +68,7 @@ function placeElements(numberOfElements, elementName) {
     for (let i = 0; i < numberOfElements; i++) {
         const elementPosition = { id: `${i}` };
         placeRandomElementAvoidingAdjacent(document.createElement('div'), elementPosition);
-        avoidElementArea(elementPosition);
+        avoidElementArea(elementPosition, elementName);
         const element = document.createElement('div');
         element.className = elementName;
         element.id = i;
@@ -82,8 +82,15 @@ function placeElements(numberOfElements, elementName) {
     }
 }
 
-function avoidElementArea(elementPosition) {
+function avoidElementArea(elementPosition, elementName) {
     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y });
+
+    if (elementName === 'pit') {
+        Globals.avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y });
+        Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 1 });
+        Globals.avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y });
+        Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y - 1 });
+    }
 }
 
 function generateBoard(totalWumpus, totalPits) {
@@ -102,8 +109,8 @@ function generateBoard(totalWumpus, totalPits) {
     Globals.recordedPositions[0].push({ x: 0, y: 0, content: 'Empty' });
     avoidPlayerArea(Globals.playerPosition);
 
-    placeElements(totalWumpus, 'wumpus');
     placeElements(totalPits, 'pit');
+    placeElements(totalWumpus, 'wumpus');
 
     placeElementHints(Globals.pits, 'breeze');
     placeElementHints(Globals.wumpuses, 'stench');
