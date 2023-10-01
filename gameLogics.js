@@ -279,6 +279,36 @@ function isGoldInPlayerPosition(positionX, positionY) {
     return false;
 }
 
+function assignScore(cell, cellIndex, positionX, positionY) {
+    if (hasElement(cell, 'stench')) {
+        if (cellIndex !== -1) {
+            increaseDanger(cellIndex, 2);
+        }
+        else {
+            pushNewPossibleMove(positionX, positionY, 2);
+        }
+    }
+    else if (hasElement(cell, 'breeze')) {
+        if (cellIndex !== -1) {
+            increaseDanger(cellIndex, 1);
+        }
+        else {
+            pushNewPossibleMove(positionX, positionY, 1);
+        }
+    }
+    else if (hasElement(cell, 'stench') && hasElement(cell, 'breeze')) {
+        if (cellIndex !== -1) {
+            increaseDanger(cellIndex, 3);
+        }
+        else {
+            pushNewPossibleMove(positionX, positionY, 3);
+        }
+    }
+    else if (cellIndex === -1) {
+        pushNewPossibleMove(positionX, positionY, 0);
+    }
+}
+
 function getPossibleMoves() {
     const cell = Globals.findElement(playerPositionX, playerPositionY);
     let goldFound = false;
@@ -291,33 +321,7 @@ function getPossibleMoves() {
             const cellIndex = Globals.possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY);
 
             if (!isCellVisited(playerPositionX, playerPositionY)) {
-                if (hasElement(cell, 'stench')) {
-                    if (cellIndex !== -1) {
-                        increaseDanger(cellIndex, 2);
-                    }
-                    else {
-                        pushNewPossibleMove(newX, newY, 2);
-                    }
-                }
-                else if (hasElement(cell, 'breeze')) {
-                    if (cellIndex !== -1) {
-                        increaseDanger(cellIndex, 1);
-                    }
-                    else {
-                        pushNewPossibleMove(newX, newY, 1);
-                    }
-                }
-                else if (hasElement(cell, 'stench') && hasElement(cell, 'breeze')) {
-                    if (cellIndex !== -1) {
-                        increaseDanger(cellIndex, 3);
-                    }
-                    else {
-                        pushNewPossibleMove(newX, newY, 3);
-                    }
-                }
-                else if (cellIndex === -1) {
-                    pushNewPossibleMove(newX, newY, 0);
-                }
+                assignScore(cell, cellIndex, newX, newY);
             }
         }
     }
@@ -326,9 +330,8 @@ function getPossibleMoves() {
         goldFound = true;
     }
 
-    pushPositionInRecordedPositions(Globals.playerPosition.x, Globals.playerPosition.y);
-
     if (!goldFound) {
+        pushPositionInRecordedPositions(Globals.playerPosition.x, Globals.playerPosition.y);
         removeVisitedCellsFromPossibleMoves();
     }
 
