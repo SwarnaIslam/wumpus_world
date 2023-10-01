@@ -11,7 +11,8 @@ let wumpuses = [];
 let recordedPositions = Array.from({ length: 10 }, () => []);
 let possibleMoves = [];
 let avoidPositions = [];
-let offset=52/2-20/2
+let offset=2+46/2-20/2
+let cellWidth=48
 const neighbourCells = [
     { dx: -1, dy: 0, move: 'left' },
     { dx: 1, dy: 0, move: 'right' },
@@ -55,5 +56,6 @@ export {
     isCellInsideBoard,
     setPossibleMoves,
     setWumpusLocations,
-    offset
+    offset,
+    cellWidth
 };

@@ -131,8 +131,8 @@ function shootArrow(wumpusPosition) {
 
 async function updatePlayerPosition() {
     return new Promise((resolve, reject) => {
-        player.style.left = Globals.playerPosition.x * 54 + Globals.offset + 'px';
-        player.style.top = Globals.playerPosition.y * 54 + Globals.offset + 'px';
+        player.style.left = Globals.playerPosition.x * Globals.cellWidth + Globals.offset + 'px';
+        player.style.top = Globals.playerPosition.y * Globals.cellWidth + Globals.offset + 'px';
     
         const currentCell = Globals.findElement(Globals.playerPosition.x, Globals.playerPosition.y);
     

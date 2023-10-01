@@ -13,14 +13,14 @@ body {
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(10, 54px);
+    grid-template-columns: repeat(10, 48px);
     
 }
 
 
 .grid-cell {
-    width: 52px;
-    height: 52px;
+    width: 46px;
+    height: 46px;
     background: #8b4513;
     border: 1px solid black;
     
