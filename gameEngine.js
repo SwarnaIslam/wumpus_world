@@ -237,17 +237,17 @@ async function movePlayer(direction) {
 
         if (isGoldInNextCell(nextBestMove, pathToTargetCell[0])) {
             Globals.increaseScore(1000);
-            await movePlayerWithDelay(move, false, true, nextBestMove, 1000);
+            await movePlayerWithDelay(move, false, true, nextBestMove, 500);
             break;
         }
         else if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
             if (isWumpusInNextCell(nextBestMove, nextCellToMove)) {
-                await movePlayerWithDelay(move, true, false, nextBestMove, 1000);
+                await movePlayerWithDelay(move, true, false, nextBestMove, 500);
                 Globals.decreaseScore(1);
                 break;
             }
             else {
-                await movePlayerWithDelay(move, false, false, nextBestMove, 1000);
+                await movePlayerWithDelay(move, false, false, nextBestMove, 500);
                 Globals.decreaseScore(1);
                 break;
             }

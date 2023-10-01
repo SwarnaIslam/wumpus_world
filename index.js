@@ -12,7 +12,7 @@ function startGame () {
     // });
     // overworld.init();
 
-    generateBoard(0, 10, 5, 10, 5);
+    generateBoard(0, 5, 3, 8, 1);
     updatePlayerPosition();
     movePlayer('right');
 }
