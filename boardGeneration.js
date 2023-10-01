@@ -11,8 +11,8 @@ function placeRandomElementAvoidingAdjacent(element, position) {
 
     position.x = randomX;
     position.y = randomY;
-    element.style.left = randomX * 54 + Globals.offset + 'px';
-    element.style.top = randomY * 54 + Globals.offset + 'px';
+    element.style.left = randomX * Globals.cellWidth + Globals.offset + 'px';
+    element.style.top = randomY * Globals.cellWidth + Globals.offset + 'px';
 }
 
 function avoidPlayerArea(playerPosition) {
@@ -72,8 +72,8 @@ function placeElements(numberOfElements, elementName) {
         const element = document.createElement('div');
         element.className = elementName;
         element.id = i;
-        element.style.left = elementPosition.x * 54 + Globals.offset + 'px';
-        element.style.top = elementPosition.y * 54 + Globals.offset + 'px';
+        element.style.left = elementPosition.x * Globals.cellWidth + Globals.offset + 'px';
+        element.style.top = elementPosition.y * Globals.cellWidth + Globals.offset + 'px';
         const cell_elements = Globals.findElement(elementPosition.x, elementPosition.y);
         cell_elements.appendChild(element);
 
@@ -102,6 +102,8 @@ function generateBoard(totalWumpus, totalPits) {
         cell_elements.className = 'grid-cell-elements';
         cell_elements.setAttribute('data-x', i % 10);
         cell_elements.setAttribute('data-y', Math.floor(i / 10));
+        cell.style.marginTop="1px"
+        cell.style.marginLeft="1px"
         cell.appendChild(cell_elements);
         Globals.gridContainer.appendChild(cell);
     }
