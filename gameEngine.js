@@ -78,6 +78,29 @@ function checkForNeighbourWumpus(positionX, positionY) {
     return false;
 }
 
+function checkForNeighbourPit(positionX, positionY) {
+    for (const { dx, dy } of Globals.neighbourCells) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (Globals.isCellInsideBoard(newX, newY)) {
+            const cell = Globals.findElement(newX, newY);
+
+            const hasPit = cell.querySelector('.pit');
+
+            if (hasPit) {
+                if (Globals.possibleMoves.some(cell => cell.x === newX && cell.y === newY)) {
+                    const cellIndex = Globals.possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY); //needs updating
+                    Globals.possibleMoves[cellIndex].danger = Globals.possibleMoves[cellIndex].danger + 1; //needs updating
+                }
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 function removeStenches(positionX, positionY) {
     for (const { dx, dy } of Globals.neighbourCells) {
         const newX = positionX + dx;
@@ -100,10 +123,15 @@ function removeStenches(positionX, positionY) {
     }
 }
 
-function checkAndUpdateStenchesForNeighbourWumpus(positionX, positionY) {
+function checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(positionX, positionY) {
     if (checkForNeighbourWumpus(positionX, positionY)) {
         const cell = Globals.findElement(positionX, positionY);
         cell.textContent = 'stench';
+    }
+
+    if (checkForNeighbourPit(positionX, positionY)) {
+        const cell = Globals.findElement(positionX, positionY);
+        cell.textContent = 'breeze';
     }
 }
 
@@ -118,7 +146,7 @@ function shootArrow(wumpusPosition) {
                 removeStenches(wumpusPosition.x, wumpusPosition.y);
                 Globals.setWumpusLocations(Globals.wumpuses.filter(cell => cell.x !== wumpusPosition.x && cell.y !== wumpusPosition.y));
 
-                checkAndUpdateStenchesForNeighbourWumpus(wumpusPosition.x, wumpusPosition.y);
+                checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(wumpusPosition.x, wumpusPosition.y);
             }
         }
         // updateArrows();
@@ -182,11 +210,11 @@ async function movePlayer(direction) {
         if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
             if (isWumpusInNextCell(nextBestMove, nextCellToMove)) {
 
-                await movePlayerWithDelay(move, true, nextBestMove, 1000);
+                await movePlayerWithDelay(move, true, nextBestMove, 100);
                 break;
             }
             else {
-                await movePlayerWithDelay(move, false, nextBestMove, 1000);
+                await movePlayerWithDelay(move, false, nextBestMove, 100);
                 break;
             }
         }

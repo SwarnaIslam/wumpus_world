@@ -85,12 +85,12 @@ function placeElements(numberOfElements, elementName) {
 function avoidElementArea(elementPosition, elementName) {
     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y });
 
-    if (elementName === 'pit') {
-        Globals.avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y });
-        Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 1 });
-        Globals.avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y });
-        Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y - 1 });
-    }
+    // if (elementName === 'pit') {
+    //     Globals.avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y });
+    //     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 1 });
+    //     Globals.avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y });
+    //     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y - 1 });
+    // }
 }
 
 function generateBoard(totalWumpus, totalPits) {

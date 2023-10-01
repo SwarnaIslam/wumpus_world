@@ -6,7 +6,7 @@ const movements = Globals.neighbourCells;
 
 
 function startGame () {
-    generateBoard(6, 12);
+    generateBoard(5, 10);
     updatePlayerPosition();
     movePlayer('right');
 }

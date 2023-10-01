@@ -43,6 +43,11 @@ body {
     /* display: none; */
 }
 
+.grid-cell.glitter {
+    color: #000;
+    /* display: none; */
+}
+
 #player {
     width: 20px;
     height: 20px;
@@ -65,6 +70,15 @@ body {
     width: 20px;
     height: 20px;
     background-color: #000;
+    position: absolute;
+    z-index: 1;
+    /* display: none; */
+}
+
+.gold {
+    width: 20px;
+    height: 20px;
+    background-color: #E5B80B;
     position: absolute;
     z-index: 1;
     /* display: none; */
