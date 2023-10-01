@@ -6,9 +6,13 @@ function checkCollision(position1, position2) {
     return position1.x === position2.x && position1.y === position2.y;
 }
 
-async function movePlayerWithDelay(move, shoot, nextBestMove, delayTime) {
+async function movePlayerWithDelay(move, shoot, collect, nextBestMove, delayTime) {
     setTimeout(async () => {
-        if (shoot) {
+        if (collect) {
+            console.log(move, nextBestMove);
+            collectGold(nextBestMove);
+        }
+        else if (shoot) {
             shootArrow(nextBestMove);
         }
         await movePlayer(move);
@@ -17,6 +21,15 @@ async function movePlayerWithDelay(move, shoot, nextBestMove, delayTime) {
 
 function isWumpusInNextCell(nextBestMove, nextCellToMove) {
     if (nextBestMove.wumpusExists && nextCellToMove.x === nextBestMove.x && nextCellToMove.y === nextBestMove.y) {
+        return true;
+    }
+
+    return false;
+}
+
+function isGoldInNextCell(nextBestMove, nextCellToMove) {
+    console.log('gold Found', nextBestMove.goldExists, nextBestMove. nextCellToMove);
+    if (nextBestMove.goldExists && nextCellToMove.x === nextBestMove.x && nextCellToMove.y === nextBestMove.y) {
         return true;
     }
 
@@ -135,6 +148,19 @@ function checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(positionX, pos
     }
 }
 
+function collectGold(goldPosition) {
+    const cell = Globals.findElement(goldPosition.x, goldPosition.y);
+    console.log(cell);
+    if (cell) {
+        const goldElement = cell.querySelector('.gold');
+        if (goldElement) {
+            goldElement.remove();
+            checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(goldPosition.x, goldPosition.y);
+            Globals.updateGoldCount();
+        }
+    }
+}
+
 function shootArrow(wumpusPosition) {
     if (Globals.arrows > 0) {
         const cell = Globals.findElement(wumpusPosition.x, wumpusPosition.y);
@@ -149,7 +175,8 @@ function shootArrow(wumpusPosition) {
                 checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(wumpusPosition.x, wumpusPosition.y);
             }
         }
-        // updateArrows();
+        Globals.decreaseScore(100);
+        Globals.updateArrow();
     }
 }
 
@@ -157,7 +184,7 @@ async function updatePlayerPosition() {
     return new Promise((resolve, reject) => {
         player.style.left = Globals.playerPosition.x * Globals.cellWidth + Globals.offset + 'px';
         player.style.top = Globals.playerPosition.y * Globals.cellWidth + Globals.offset + 'px';
-    
+
         const currentCell = Globals.findElement(Globals.playerPosition.x, Globals.playerPosition.y);
 
         currentCell.style.display = 'block';
@@ -195,9 +222,10 @@ async function movePlayer(direction) {
 
 
     await updatePlayerPosition();
-    // updateScore();
 
     const nextBestMove = selectBestMove(Globals.playerPosition.x, Globals.playerPosition.y);
+
+    console.log(nextBestMove.goldExists);
 
     const pathToTargetCell = findPath(Globals.playerPosition.x, Globals.playerPosition.y, nextBestMove.x, nextBestMove.y);
 
@@ -207,14 +235,20 @@ async function movePlayer(direction) {
         const newX = Globals.playerPosition.x + dx;
         const newY = Globals.playerPosition.y + dy;
 
-        if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
+        if (isGoldInNextCell(nextBestMove, pathToTargetCell[0])) {
+            Globals.increaseScore(1000);
+            await movePlayerWithDelay(move, false, true, nextBestMove, 1000);
+            break;
+        }
+        else if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
             if (isWumpusInNextCell(nextBestMove, nextCellToMove)) {
-
-                await movePlayerWithDelay(move, true, nextBestMove, 100);
+                await movePlayerWithDelay(move, true, false, nextBestMove, 1000);
+                Globals.decreaseScore(1);
                 break;
             }
             else {
-                await movePlayerWithDelay(move, false, nextBestMove, 100);
+                await movePlayerWithDelay(move, false, false, nextBestMove, 1000);
+                Globals.decreaseScore(1);
                 break;
             }
         }
@@ -222,11 +256,16 @@ async function movePlayer(direction) {
 
     if (checkWumpusCollisions()) {
         Globals.messageDisplay.textContent = 'You were encountered by wumpus! Game Over';
-        isGameOver = true
+        isGameOver = true;
         alert(Globals.messageDisplay.textContent);
     } else if (checkPitCollisions()) {
         Globals.messageDisplay.textContent = 'You fell into a pit! Game Over';
-        isGameOver = true
+        isGameOver = true;
+        alert(Globals.messageDisplay.textContent);
+    }
+    else if(Globals.golds === 0) {
+        Globals.messageDisplay.textContent = 'You collected all the golds! Your have won the game';
+        isGameOver = true;
         alert(Globals.messageDisplay.textContent);
     }
 }

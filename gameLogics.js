@@ -265,8 +265,24 @@ function checkAndUpdatePitInCell(positionX, positionY) {
     }
 }
 
+function isGoldInPlayerPosition(positionX, positionY) {
+    const cell = Globals.findElement(positionX, positionY);
+
+    const hasGold = cell.querySelector('.gold');
+
+    if (hasGold) {
+        const cellIndex = findIndexFromPossibleMoves(positionX, positionY);
+        setCellHasGold(cellIndex);
+
+        return true;
+    }
+
+    return false;
+}
+
 function getPossibleMoves() {
     const cell = Globals.findElement(playerPositionX, playerPositionY);
+    let goldFound = false;
 
     for (const { dx, dy } of Globals.neighbourCells) {
         const newX = playerPositionX + dx;
@@ -307,9 +323,15 @@ function getPossibleMoves() {
         }
     }
 
+    if (isGoldInPlayerPosition(playerPositionX, playerPositionY)) {
+        goldFound = true;
+    }
+
     pushPositionInRecordedPositions(Globals.playerPosition.x, Globals.playerPosition.y);
 
-    removeVisitedCellsFromPossibleMoves();
+    if (!goldFound) {
+        removeVisitedCellsFromPossibleMoves();
+    }
 
     checkForSafeCells();
 
@@ -331,11 +353,21 @@ function selectBestMove(playerX, playerY) {
     let bestMoveFound = false;
 
     for (const move of Globals.possibleMoves) {
-        if (!move.pitExists) {
-            if (move.wumpusExists) {
-                bestMove = move;
-                bestMoveFound = true;
-                break;
+        if (move.goldExists) {
+            bestMove = move;
+            bestMoveFound = true;
+            break;
+        }
+    }
+
+    if (!bestMoveFound) {
+        for (const move of Globals.possibleMoves) {
+            if (!move.pitExists) {
+                if (move.wumpusExists) {
+                    bestMove = move;
+                    bestMoveFound = true;
+                    break;
+                }
             }
         }
     }
@@ -349,7 +381,7 @@ function selectBestMove(playerX, playerY) {
         }
     }
 
-    console.log('All possible Moves: ', Globals.possibleMoves);
+    // console.log('All possible Moves: ', Globals.possibleMoves);
 
     return bestMove;
 }

@@ -18,11 +18,11 @@ function placeRandomElementAvoidingAdjacent(element, position) {
 function avoidPlayerArea(playerPosition) {
     Globals.avoidPositions.push({ x: playerPosition.x, y: playerPosition.y });
     Globals.avoidPositions.push({ x: playerPosition.x + 1, y: playerPosition.y });
-    Globals.avoidPositions.push({ x: playerPosition.x, y: playerPosition.y + 1 });
-    Globals.avoidPositions.push({ x: playerPosition.x + 1, y: playerPosition.y + 1 });
+    Globals.avoidPositions.push({ x: playerPosition.x, y: playerPosition.y - 1 });
+    Globals.avoidPositions.push({ x: playerPosition.x + 1, y: playerPosition.y - 1 });
     Globals.avoidPositions.push({ x: playerPosition.x + 2, y: playerPosition.y });
-    Globals.avoidPositions.push({ x: playerPosition.x, y: playerPosition.y + 2 });
-    Globals.avoidPositions.push({ x: playerPosition.x + 2, y: playerPosition.y + 2 });
+    Globals.avoidPositions.push({ x: playerPosition.x, y: playerPosition.y - 2 });
+    Globals.avoidPositions.push({ x: playerPosition.x + 1, y: playerPosition.y - 2 });
 }
 
 function placeElementHints(elements, hintName) {
@@ -40,8 +40,9 @@ function placeElementHints(elements, hintName) {
 
                 const hasWumpus = cell.querySelector('.wumpus');
                 const hasPit = cell.querySelector('.pit');
+                const hasGold = cell.querySelector('.gold');
 
-                if (hasWumpus || hasPit) {
+                if (hasWumpus || hasPit || hasGold) {
                     continue;
                 }
 
@@ -85,15 +86,17 @@ function placeElements(numberOfElements, elementName) {
 function avoidElementArea(elementPosition, elementName) {
     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y });
 
-    // if (elementName === 'pit') {
-    //     Globals.avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y });
-    //     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 1 });
-    //     Globals.avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y });
-    //     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y - 1 });
-    // }
+    if (elementName === 'gold') {
+        Globals.avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y });
+        Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 1 });
+        Globals.avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y });
+        Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y - 1 });
+    }
 }
 
-function generateBoard(totalWumpus, totalPits) {
+function generateBoard(initialScore, totoalArrows, totalWumpus, totalPits, totalGolds) {
+
+    Globals.setInitialArrowsScoreAndGolds(totoalArrows, initialScore, totalGolds);
 
     for (let i = 0; i < 100; i++) {
         const cell = document.createElement('div');
@@ -102,15 +105,16 @@ function generateBoard(totalWumpus, totalPits) {
         cell_elements.className = 'grid-cell-elements';
         cell_elements.setAttribute('data-x', i % 10);
         cell_elements.setAttribute('data-y', Math.floor(i / 10));
-        cell.style.marginTop="1px"
-        cell.style.marginLeft="1px"
+        cell.style.marginTop = "1px"
+        cell.style.marginLeft = "1px"
         cell.appendChild(cell_elements);
         Globals.gridContainer.appendChild(cell);
     }
 
-    Globals.recordedPositions[0].push({ x: 0, y: 0, content: 'Empty' });
+    Globals.recordedPositions[0].push({ x: 0, y: 9, content: 'Empty' });
     avoidPlayerArea(Globals.playerPosition);
 
+    placeElements(totalGolds, 'gold');
     placeElements(totalPits, 'pit');
     placeElements(totalWumpus, 'wumpus');
 
