@@ -1,6 +1,7 @@
 import * as Globals from "./global.js"
 import { hasElement, isCellVisited, selectBestMove } from "./gameLogics.js";
 import { findPath } from "./pathFinder.js";
+import { Overworld } from "./UIController/Overworld.js";
 let isGameOver = false
 function checkCollision(position1, position2) {
     return position1.x === position2.x && position1.y === position2.y;
@@ -16,7 +17,7 @@ async function movePlayerWithDelay(move, shoot, collect, nextBestMove, delayTime
             shootArrow(nextBestMove);
         }
         await movePlayer(move);
-    }, delayTime);
+    }, 0);
 }
 
 function isWumpusInNextCell(nextBestMove, nextCellToMove) {
@@ -147,7 +148,6 @@ function checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(positionX, pos
         cell.textContent = 'breeze';
     }
 }
-
 function collectGold(goldPosition) {
     const cell = Globals.findElement(goldPosition.x, goldPosition.y);
     console.log(cell);
@@ -160,12 +160,16 @@ function collectGold(goldPosition) {
         }
     }
 }
-
 function shootArrow(wumpusPosition) {
     if (Globals.arrows > 0) {
         const cell = Globals.findElement(wumpusPosition.x, wumpusPosition.y);
         if (cell) {
             const wumpusElement = cell.querySelector('.wumpus');
+            const thumbWumpus=document.querySelector(`#container > #thumbnail > .thumbnail-cell[data-x="${wumpusPosition.x}"][data-y="${wumpusPosition.y}"]`)
+            console.log(thumbWumpus)
+            if(thumbWumpus){
+                thumbWumpus.querySelector('img').remove()
+            }
             if (wumpusElement) {
                 wumpusElement.remove();
 
@@ -182,25 +186,33 @@ function shootArrow(wumpusPosition) {
 
 async function updatePlayerPosition() {
     return new Promise((resolve, reject) => {
-        player.style.left = Globals.playerPosition.x * Globals.cellWidth + Globals.offset + 'px';
-        player.style.top = Globals.playerPosition.y * Globals.cellWidth + Globals.offset + 'px';
-
+        // player.style.left = Globals.playerPosition.x * Globals.cellWidth + Globals.offset + 'px';
+        // player.style.top = Globals.playerPosition.y * Globals.cellWidth + Globals.offset + 'px';
+    
         const currentCell = Globals.findElement(Globals.playerPosition.x, Globals.playerPosition.y);
 
         currentCell.style.display = 'block';
+        const parent=currentCell.parentElement
+        const parentImg=parent.querySelector('img')
+        if(parentImg)
+            parentImg.remove()
         requestAnimationFrame(() => {
             resolve();
         });
     });
 
 }
-
+const overworld = new Overworld({
+    element: document.querySelector(".game-container")
+});
+overworld.init()
 async function movePlayer(direction) {
     if (isGameOver) return
     switch (direction) {
         case 'left':
             if (Globals.playerPosition.x > 0) {
                 Globals.playerPosition.x--;
+                
             }
             break;
         case 'right':
@@ -220,12 +232,11 @@ async function movePlayer(direction) {
             break;
     }
 
-
+    await overworld.animateAgent(direction)
     await updatePlayerPosition();
+    // updateScore();
 
     const nextBestMove = selectBestMove(Globals.playerPosition.x, Globals.playerPosition.y);
-
-    console.log(nextBestMove.goldExists);
 
     const pathToTargetCell = findPath(Globals.playerPosition.x, Globals.playerPosition.y, nextBestMove.x, nextBestMove.y);
 
@@ -240,8 +251,10 @@ async function movePlayer(direction) {
             await movePlayerWithDelay(move, false, true, nextBestMove, 500);
             break;
         }
+
         else if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
             if (isWumpusInNextCell(nextBestMove, nextCellToMove)) {
+
                 await movePlayerWithDelay(move, true, false, nextBestMove, 500);
                 Globals.decreaseScore(1);
                 break;

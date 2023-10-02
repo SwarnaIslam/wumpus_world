@@ -1,35 +1,54 @@
 body {
     font-family: Arial, sans-serif;
+    background-color: white;
+    background-image: url('UIController/images/bg4.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 100% 100%;
 }
 
 
 .game-container {
     position: relative; 
+    display: flex;
     width: 1120px;
     height: 550px;
-    margin: 20px auto;
-    outline: 1px solid black;
+    margin: 100px auto;
+    /* outline: 1px solid black; */
   }
 
 .grid-container {
+    flex: 1;
     display: grid;
-    grid-template-columns: repeat(10, 48px);
+    grid-template-columns: repeat(10, 54px);
     
 }
 
-
+.thumbnail{
+    flex: 1;
+    display: grid;
+    margin: auto 100px;
+    grid-template-columns: repeat(10,40px);
+}
+.thumbnail-cell{
+    display: flex;
+    width: 38px;
+    height: 38px;
+    background: #fc9294;
+    border: 1px solid white;
+}
 .grid-cell {
-    width: 46px;
-    height: 46px;
-    background: #8b4513;
-    border: 1px solid black;
+    width: 52px;
+    height: 52px;
+    background: #fc9294;
+    border: 1px solid transparent;
     
 }
 
 .grid-cell-elements {
     width: 100%;
     height: 100%;
-    background: #fff;
+    background: #fc9294;
     display: none;
 }
 
@@ -52,7 +71,7 @@ body {
     width: 20px;
     height: 20px;
     background-image: url('path_to_player_image.png');
-    background-color: #00f;
+    background-color: transparent;
     position: absolute;
     z-index: 1;
 }
@@ -60,16 +79,19 @@ body {
 .wumpus {
     width: 20px;
     height: 20px;
-    background-color: #f00;
+    background-color: transparent;
     position: absolute;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     /* display: none; */
 }
 
 .pit {
     width: 20px;
     height: 20px;
-    background-color: #000;
+    background-color: transparent;
     position: absolute;
     z-index: 1;
     /* display: none; */

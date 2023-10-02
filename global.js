@@ -1,26 +1,27 @@
 const gridContainer = document.getElementById('grid-container');
+const thumbnailContainer = document.getElementById('thumbnail');
 const messageDisplay = document.getElementById('message');
 
 const boardHeight = 10;
 const boardWidth = 10;
-let playerPosition = { x: 0, y: 9 };
+let playerPosition = { x: 0, y: 0 };
 let score = 0;
-let arrows = 0;
+let arrows = 10;
 let golds = 0;
 let pits = [];
 let wumpuses = [];
 let recordedPositions = Array.from({ length: 10 }, () => []);
 let possibleMoves = [];
 let avoidPositions = [];
-let offset = 2 + 46 / 2 - 20 / 2
-let cellWidth = 48
+let offset=2+52/2-20/2
+let cellWidth=54
+let manualBoard=[]
 const neighbourCells = [
     { dx: -1, dy: 0, move: 'left' },
     { dx: 1, dy: 0, move: 'right' },
     { dx: 0, dy: -1, move: 'up' },
     { dx: 0, dy: 1, move: 'down' },
 ];
-
 function setInitialArrowsScoreAndGolds(initialArrows, initialScore, initialGolds) {
     arrows = initialArrows;
     score = initialScore;
@@ -98,5 +99,7 @@ export {
     updateGoldCount,
     offset,
     cellWidth,
-    golds,
+    manualBoard,
+    thumbnailContainer,
+    golds
 };
