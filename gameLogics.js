@@ -143,7 +143,6 @@ function checkEmptyCell(positionX, positionY) {
 function checkForSafeCells() {
     for (const move of Globals.possibleMoves) {
         checkEmptyCell(move.x, move.y);
-        // checkStenchAndBreezeCombinationAroundCells(move.x, move.y);
     }
 }
 
@@ -191,7 +190,7 @@ function pushPositionInRecordedPositions(positionX, positionY) {
         }
     }
 
-    // console.log('hello');
+    console.log('hello');
 }
 
 function checkAndUpdateWumpusInCell(positionX, positionY) {
@@ -265,8 +264,54 @@ function checkAndUpdatePitInCell(positionX, positionY) {
     }
 }
 
+function isGoldInPlayerPosition(positionX, positionY) {
+    const cell = Globals.findElement(positionX, positionY);
+
+    const hasGold = cell.querySelector('.gold');
+
+    if (hasGold) {
+        const cellIndex = findIndexFromPossibleMoves(positionX, positionY);
+        setCellHasGold(cellIndex);
+
+        return true;
+    }
+
+    return false;
+}
+
+function assignScore(cell, cellIndex, positionX, positionY) {
+    if (hasElement(cell, 'stench')) {
+        if (cellIndex !== -1) {
+            increaseDanger(cellIndex, 2);
+        }
+        else {
+            pushNewPossibleMove(positionX, positionY, 2);
+        }
+    }
+    else if (hasElement(cell, 'breeze')) {
+        if (cellIndex !== -1) {
+            increaseDanger(cellIndex, 1);
+        }
+        else {
+            pushNewPossibleMove(positionX, positionY, 1);
+        }
+    }
+    else if (hasElement(cell, 'stench') && hasElement(cell, 'breeze')) {
+        if (cellIndex !== -1) {
+            increaseDanger(cellIndex, 3);
+        }
+        else {
+            pushNewPossibleMove(positionX, positionY, 3);
+        }
+    }
+    else if (cellIndex === -1) {
+        pushNewPossibleMove(positionX, positionY, 0);
+    }
+}
+
 function getPossibleMoves() {
     const cell = Globals.findElement(playerPositionX, playerPositionY);
+    let goldFound = false;
 
     for (const { dx, dy } of Globals.neighbourCells) {
         const newX = playerPositionX + dx;
@@ -276,44 +321,21 @@ function getPossibleMoves() {
             const cellIndex = Globals.possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY);
 
             if (!isCellVisited(playerPositionX, playerPositionY)) {
-                if (hasElement(cell, 'stench')) {
-                    if (cellIndex !== -1) {
-                        increaseDanger(cellIndex, 2);
-                    }
-                    else {
-                        pushNewPossibleMove(newX, newY, 2);
-                    }
-                }
-                else if (hasElement(cell, 'breeze')) {
-                    if (cellIndex !== -1) {
-                        increaseDanger(cellIndex, 1);
-                    }
-                    else {
-                        pushNewPossibleMove(newX, newY, 1);
-                    }
-                }
-                else if (hasElement(cell, 'stench') && hasElement(cell, 'breeze')) {
-                    if (cellIndex !== -1) {
-                        increaseDanger(cellIndex, 3);
-                    }
-                    else {
-                        pushNewPossibleMove(newX, newY, 3);
-                    }
-                }
-                else if (cellIndex === -1) {
-                    pushNewPossibleMove(newX, newY, 0);
-                }
+                assignScore(cell, cellIndex, newX, newY);
             }
         }
     }
 
-    pushPositionInRecordedPositions(Globals.playerPosition.x, Globals.playerPosition.y);
+    if (isGoldInPlayerPosition(playerPositionX, playerPositionY)) {
+        goldFound = true;
+    }
 
-    removeVisitedCellsFromPossibleMoves();
+    if (!goldFound) {
+        pushPositionInRecordedPositions(Globals.playerPosition.x, Globals.playerPosition.y);
+        removeVisitedCellsFromPossibleMoves();
+    }
 
     checkForSafeCells();
-
-    // possibleMoves = possibleMoves.filter(cell => cell.danger !== 4);
 }
 
 function selectBestMove(playerX, playerY) {
@@ -331,11 +353,21 @@ function selectBestMove(playerX, playerY) {
     let bestMoveFound = false;
 
     for (const move of Globals.possibleMoves) {
-        if (!move.pitExists) {
-            if (move.wumpusExists) {
-                bestMove = move;
-                bestMoveFound = true;
-                break;
+        if (move.goldExists) {
+            bestMove = move;
+            bestMoveFound = true;
+            break;
+        }
+    }
+
+    if (!bestMoveFound) {
+        for (const move of Globals.possibleMoves) {
+            if (!move.pitExists) {
+                if (move.wumpusExists) {
+                    bestMove = move;
+                    bestMoveFound = true;
+                    break;
+                }
             }
         }
     }

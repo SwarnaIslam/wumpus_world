@@ -92,6 +92,13 @@ function generateManualBoard(totalWumpus, totalPits) {
             thumbElement.id=i
             thumbElement.style.margin="auto"
         }
+        else if(Globals.manualBoard[i]=='G'){
+            thumbElement.src="UIController/images/gold.png"
+            console.log("manual gold")
+            thumbElement.style.width="60%"
+            thumbElement.id=i
+            thumbElement.style.margin="auto"
+        }
         thumbCeil.appendChild(thumbElement)
 
         const cell_elements = document.createElement('div');
@@ -119,6 +126,9 @@ function generateManualBoard(totalWumpus, totalPits) {
         else if(Globals.manualBoard[i]=='W'){
             placeElements({x:i%10, y:Math.floor(i / 10)}, 'wumpus', wumpusNo);
             wumpusNo++;
+        }
+        else if(Globals.manualBoard[i]=='G'){
+            placeElements({x:i%10, y:Math.floor(i / 10)}, 'wumpus', wumpusNo);
         }
     }
 

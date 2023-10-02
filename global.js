@@ -7,6 +7,7 @@ const boardWidth = 10;
 let playerPosition = { x: 0, y: 0 };
 let score = 0;
 let arrows = 10;
+let golds = 0;
 let pits = [];
 let wumpuses = [];
 let recordedPositions = Array.from({ length: 10 }, () => []);
@@ -21,6 +22,38 @@ const neighbourCells = [
     { dx: 0, dy: -1, move: 'up' },
     { dx: 0, dy: 1, move: 'down' },
 ];
+function setInitialArrowsScoreAndGolds(initialArrows, initialScore, initialGolds) {
+    arrows = initialArrows;
+    score = initialScore;
+    golds = initialGolds;
+    document.getElementById("score").textContent = "Score: " + score;
+    document.getElementById("arrows").textContent = "Arrows: " + arrows;
+    document.getElementById("golds").textContent = "Gold Remains: " + golds;
+}
+
+function increaseScore(increaseBy) {
+    score = score + increaseBy;
+    document.getElementById("score").textContent = "Score: " + score;
+}
+
+function decreaseScore(decreaseBy) {
+    score = score - decreaseBy;
+    document.getElementById("score").textContent = "Score: " + score;
+}
+
+function updateArrow() {
+    arrows = arrows - 1;
+    document.getElementById("arrows").textContent = "Arrows: " + arrows;
+}
+
+function setArrowLimits(totalArrows) {
+    arrows = totalArrows;
+}
+
+function updateGoldCount () {
+    golds = golds - 1;
+    document.getElementById("golds").textContent = "Gold Remains: " + golds;
+}
 
 function findElement(positionX, positionY) {
     return document.querySelector(`#grid-container > .grid-cell > .grid-cell-elements[data-x="${positionX}"][data-y="${positionY}"]`);
@@ -58,8 +91,15 @@ export {
     isCellInsideBoard,
     setPossibleMoves,
     setWumpusLocations,
+    setArrowLimits,
+    updateArrow,
+    increaseScore,
+    decreaseScore,
+    setInitialArrowsScoreAndGolds,
+    updateGoldCount,
     offset,
     cellWidth,
     manualBoard,
-    thumbnailContainer
+    thumbnailContainer,
+    golds
 };

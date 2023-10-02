@@ -7,10 +7,14 @@ const movements = Globals.neighbourCells;
 
 
 function startGame () {
-    
-    generateBoard(7, 11);
-    updatePlayerPosition();
-    movePlayer('right');
+    // const overworld = new Overworld({
+    //     element: document.querySelector(".game-container")
+    // });
+    // overworld.init();
+
+    // generateBoard(0, 0, 3, 8, 1);
+    // updatePlayerPosition();
+    // movePlayer('right');
 }
 
 (function () {

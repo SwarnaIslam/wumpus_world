@@ -40,8 +40,9 @@ function placeElementHints(elements, hintName) {
 
                 const hasWumpus = cell.querySelector('.wumpus');
                 const hasPit = cell.querySelector('.pit');
+                const hasGold = cell.querySelector('.gold');
 
-                if (hasWumpus || hasPit) {
+                if (hasWumpus || hasPit || hasGold) {
                     continue;
                 }
 
@@ -59,9 +60,6 @@ function placeElementHints(elements, hintName) {
                     cell.style.fontFamily = "Arial, sans-serif"; // Example font family
                     cell.style.fontSize = "13px"; 
                     cell.style.fontStyle = "italic";
-                    if(hintName=='breeze'){
-                        
-                    }
                     cell.textContent = hintName;
                     cell.classList.add(hintName);
                 }
@@ -106,7 +104,7 @@ function placeElements(numberOfElements, elementName) {
 function avoidElementArea(elementPosition, elementName) {
     Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y });
 
-    if (elementName === 'pit') {
+    if (elementName === 'gold') {
         Globals.avoidPositions.push({ x: elementPosition.x + 1, y: elementPosition.y });
         Globals.avoidPositions.push({ x: elementPosition.x, y: elementPosition.y + 1 });
         Globals.avoidPositions.push({ x: elementPosition.x - 1, y: elementPosition.y });
@@ -115,6 +113,8 @@ function avoidElementArea(elementPosition, elementName) {
 }
 
 function generateBoard(totalWumpus, totalPits) {
+
+    Globals.setInitialArrowsScoreAndGolds(totoalArrows, initialScore, totalGolds);
 
     for (let i = 0; i < 100; i++) {
         const cell = document.createElement('div');
@@ -155,6 +155,11 @@ function generateBoard(totalWumpus, totalPits) {
         }
         else if(boardState[i]=='W'){
             thumbElement.src="UIController/images/wumpus.gif"
+            thumbElement.id=i
+            thumbElement.style.margin="auto"
+        }
+        else if(boardState[i]=='G'){
+            thumbElement.src="UIController/images/gold.png"
             thumbElement.id=i
             thumbElement.style.margin="auto"
         }

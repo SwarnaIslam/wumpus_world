@@ -7,9 +7,13 @@ function checkCollision(position1, position2) {
     return position1.x === position2.x && position1.y === position2.y;
 }
 
-async function movePlayerWithDelay(move, shoot, nextBestMove, delayTime) {
+async function movePlayerWithDelay(move, shoot, collect, nextBestMove, delayTime) {
     setTimeout(async () => {
-        if (shoot) {
+        if (collect) {
+            console.log(move, nextBestMove);
+            collectGold(nextBestMove);
+        }
+        else if (shoot) {
             shootArrow(nextBestMove);
         }
         await movePlayer(move);
@@ -18,6 +22,15 @@ async function movePlayerWithDelay(move, shoot, nextBestMove, delayTime) {
 
 function isWumpusInNextCell(nextBestMove, nextCellToMove) {
     if (nextBestMove.wumpusExists && nextCellToMove.x === nextBestMove.x && nextCellToMove.y === nextBestMove.y) {
+        return true;
+    }
+
+    return false;
+}
+
+function isGoldInNextCell(nextBestMove, nextCellToMove) {
+    console.log('gold Found', nextBestMove.goldExists, nextBestMove. nextCellToMove);
+    if (nextBestMove.goldExists && nextCellToMove.x === nextBestMove.x && nextCellToMove.y === nextBestMove.y) {
         return true;
     }
 
@@ -79,6 +92,29 @@ function checkForNeighbourWumpus(positionX, positionY) {
     return false;
 }
 
+function checkForNeighbourPit(positionX, positionY) {
+    for (const { dx, dy } of Globals.neighbourCells) {
+        const newX = positionX + dx;
+        const newY = positionY + dy;
+
+        if (Globals.isCellInsideBoard(newX, newY)) {
+            const cell = Globals.findElement(newX, newY);
+
+            const hasPit = cell.querySelector('.pit');
+
+            if (hasPit) {
+                if (Globals.possibleMoves.some(cell => cell.x === newX && cell.y === newY)) {
+                    const cellIndex = Globals.possibleMoves.findIndex(cell => cell.x === newX && cell.y === newY); //needs updating
+                    Globals.possibleMoves[cellIndex].danger = Globals.possibleMoves[cellIndex].danger + 1; //needs updating
+                }
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 function removeStenches(positionX, positionY) {
     for (const { dx, dy } of Globals.neighbourCells) {
         const newX = positionX + dx;
@@ -101,13 +137,29 @@ function removeStenches(positionX, positionY) {
     }
 }
 
-function checkAndUpdateStenchesForNeighbourWumpus(positionX, positionY) {
+function checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(positionX, positionY) {
     if (checkForNeighbourWumpus(positionX, positionY)) {
         const cell = Globals.findElement(positionX, positionY);
         cell.textContent = 'stench';
     }
-}
 
+    if (checkForNeighbourPit(positionX, positionY)) {
+        const cell = Globals.findElement(positionX, positionY);
+        cell.textContent = 'breeze';
+    }
+}
+function collectGold(goldPosition) {
+    const cell = Globals.findElement(goldPosition.x, goldPosition.y);
+    console.log(cell);
+    if (cell) {
+        const goldElement = cell.querySelector('.gold');
+        if (goldElement) {
+            goldElement.remove();
+            checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(goldPosition.x, goldPosition.y);
+            Globals.updateGoldCount();
+        }
+    }
+}
 function shootArrow(wumpusPosition) {
     if (Globals.arrows > 0) {
         const cell = Globals.findElement(wumpusPosition.x, wumpusPosition.y);
@@ -124,10 +176,11 @@ function shootArrow(wumpusPosition) {
                 removeStenches(wumpusPosition.x, wumpusPosition.y);
                 Globals.setWumpusLocations(Globals.wumpuses.filter(cell => cell.x !== wumpusPosition.x && cell.y !== wumpusPosition.y));
 
-                checkAndUpdateStenchesForNeighbourWumpus(wumpusPosition.x, wumpusPosition.y);
+                checkAndUpdateStenchesAndBreezesForNeighbourWumpusAndPit(wumpusPosition.x, wumpusPosition.y);
             }
         }
-        // updateArrows();
+        Globals.decreaseScore(100);
+        Globals.updateArrow();
     }
 }
 
@@ -142,7 +195,7 @@ async function updatePlayerPosition() {
         const parent=currentCell.parentElement
         const parentImg=parent.querySelector('img')
         if(parentImg)
-            parent.removeChild(parentImg)
+            parentImg.remove()
         requestAnimationFrame(() => {
             resolve();
         });
@@ -193,26 +246,41 @@ async function movePlayer(direction) {
         const newX = Globals.playerPosition.x + dx;
         const newY = Globals.playerPosition.y + dy;
 
-        if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
+        if (isGoldInNextCell(nextBestMove, pathToTargetCell[0])) {
+            Globals.increaseScore(1000);
+            await movePlayerWithDelay(move, false, true, nextBestMove, 500);
+            break;
+        }
+
+        else if (newX === nextCellToMove.x && newY === nextCellToMove.y) {
             if (isWumpusInNextCell(nextBestMove, nextCellToMove)) {
 
-                await movePlayerWithDelay(move, true, nextBestMove, 5);
+                await movePlayerWithDelay(move, true, false, nextBestMove, 500);
+                Globals.decreaseScore(1);
                 break;
             }
             else {
-                await movePlayerWithDelay(move, false, nextBestMove, 5);
+                await movePlayerWithDelay(move, false, false, nextBestMove, 500);
+                Globals.decreaseScore(1);
                 break;
             }
         }
     }
 
     if (checkWumpusCollisions()) {
+        Globals.decreaseScore(1000);
         Globals.messageDisplay.textContent = 'You were encountered by wumpus! Game Over';
-        isGameOver = true
+        isGameOver = true;
         alert(Globals.messageDisplay.textContent);
     } else if (checkPitCollisions()) {
+        Globals.decreaseScore(1000);
         Globals.messageDisplay.textContent = 'You fell into a pit! Game Over';
-        isGameOver = true
+        isGameOver = true;
+        alert(Globals.messageDisplay.textContent);
+    }
+    else if(Globals.golds === 0) {
+        Globals.messageDisplay.textContent = 'You collected all the golds! Your have won the game';
+        isGameOver = true;
         alert(Globals.messageDisplay.textContent);
     }
 }
