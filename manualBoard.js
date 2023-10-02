@@ -74,7 +74,8 @@ function placeElements(elementPosition, elementName,i) {
 
 
 function generateManualBoard(totalWumpus, totalPits) {
-    let pitNo=0, wumpusNo=0
+    
+    let pitNo=0, wumpusNo=0, goldNo=0
     for (let i = 0; i < 100; i++) {
         const cell = document.createElement('div');
         cell.className = 'grid-cell';
@@ -98,6 +99,7 @@ function generateManualBoard(totalWumpus, totalPits) {
             thumbElement.style.width="60%"
             thumbElement.id=i
             thumbElement.style.margin="auto"
+            goldNo++;
         }
         thumbCeil.appendChild(thumbElement)
 
@@ -131,7 +133,7 @@ function generateManualBoard(totalWumpus, totalPits) {
             placeElements({x:i%10, y:Math.floor(i / 10)}, 'wumpus', wumpusNo);
         }
     }
-
+    Globals.setInitialArrowsScoreAndGolds(5, 1000, goldNo);
     Globals.recordedPositions[0].push({ x: 0, y: 0, content: 'Empty' });
 
     // avoidPlayerArea(Globals.playerPosition);
