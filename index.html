@@ -9,11 +9,14 @@
 </head>
 
 <body>
+    <input type="file" id="fileInput" accept=".txt">
+    <img src="UIController/images/mudoh (2).gif" alt="" style="margin: auto; display: block; width: 10%;">
     <div class="game-container" id="container">
 
         <div id="player"></div>
-        <div class="grid-container" id="grid-container"></div>
         <canvas class = "game-canvas" id="game-canvas" width="1120px" height="550px" style="position: absolute; top: 0; left: 0; background-color: transparent;"></canvas>
+        <div class="grid-container" id="grid-container"></div>
+        <div class="thumbnail" id="thumbnail"></div>
     </div>
     
     <div id="score">Score: 0</div>
@@ -21,12 +24,12 @@
     <div id="message"></div>
     <script src="phaser.min.js"></script>
     <script type="module" src="UIController/utils.js"></script>
-    <script type="module" src="UIController/DirectionInput.js"></script>
     <script type="module" src="UIController/GameObject.js"></script>
     <script type="module" src="UIController/Sprite.js"></script>
     <script type="module" src="UIController/Person.js"></script>
     <script type="module" src="UIController/OverworldMap.js"></script>
     <script type="module" src="UIController/Overworld.js"></script>
+    <script type="module" src="manualBoard.js"></script>
     <script type="module" src="index.js"></script>
 </body>
 

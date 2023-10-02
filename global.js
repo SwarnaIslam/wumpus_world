@@ -1,4 +1,5 @@
 const gridContainer = document.getElementById('grid-container');
+const thumbnailContainer = document.getElementById('thumbnail');
 const messageDisplay = document.getElementById('message');
 
 const boardHeight = 10;
@@ -11,8 +12,9 @@ let wumpuses = [];
 let recordedPositions = Array.from({ length: 10 }, () => []);
 let possibleMoves = [];
 let avoidPositions = [];
-let offset=2+46/2-20/2
-let cellWidth=48
+let offset=2+52/2-20/2
+let cellWidth=54
+let manualBoard=[]
 const neighbourCells = [
     { dx: -1, dy: 0, move: 'left' },
     { dx: 1, dy: 0, move: 'right' },
@@ -57,5 +59,7 @@ export {
     setPossibleMoves,
     setWumpusLocations,
     offset,
-    cellWidth
+    cellWidth,
+    manualBoard,
+    thumbnailContainer
 };

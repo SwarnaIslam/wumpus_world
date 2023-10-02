@@ -191,7 +191,7 @@ function pushPositionInRecordedPositions(positionX, positionY) {
         }
     }
 
-    console.log('hello');
+    // console.log('hello');
 }
 
 function checkAndUpdateWumpusInCell(positionX, positionY) {
@@ -349,7 +349,7 @@ function selectBestMove(playerX, playerY) {
         }
     }
 
-    console.log('All possible Moves: ', Globals.possibleMoves);
+    // console.log('All possible Moves: ', Globals.possibleMoves);
 
     return bestMove;
 }
